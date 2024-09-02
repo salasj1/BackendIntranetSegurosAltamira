@@ -1,7 +1,7 @@
 import express from 'express';
 import multer from 'multer';
 import nodemailer from 'nodemailer';
-import { getConnection, sql } from '../database/connection.js'; // Asegúrate de incluir .js al final
+import { getConnection, sql } from '../database/connection.js'; 
 import zlib from 'zlib';
 
 const router = express.Router();
@@ -37,8 +37,8 @@ router.get('/prestaciones/:cod_emp', async (req, res) => {
 
 // Configuración del transporte de nodemailer
 const transporter = nodemailer.createTransport({
-    host: 'smtp-relay.gmail.com',
-    port: 587,
+    host: '192.168.0.206',
+    port: 25,
     secure: false, 
     tls: {
         rejectUnauthorized: false
@@ -82,7 +82,7 @@ router.post('/send-prestaciones', upload.single('pdf'), async (req, res) => {
         const { correo_e } = result.recordset[0];
         console.log(`Correo del empleado: ${correo_e}`);
         // Comprimir el archivo PDF
-        const compressedPdfBuffer = zlib.gzipSync(pdfBuffer);
+        //const compressedPdfBuffer = zlib.gzipSync(pdfBuffer);
         const mailOptions = {
             from: 'IntranetSegurosAltamira@proseguros.com.ve',
             to: "assalas.19@est.ucab.edu.ve",/* correo_e, */
@@ -90,9 +90,9 @@ router.post('/send-prestaciones', upload.single('pdf'), async (req, res) => {
             text: `Adjunto encontrarás el PDF con los movimientos de prestaciones sociales del empleado con código ${cod_emp}.`,
             attachments: [
                 {
-                    filename: 'prestaciones.pdf.gz',
-                    content: compressedPdfBuffer,
-                    contentType: 'application/gzip'
+                    filename: 'prestaciones.pdf',
+                    content: pdfBuffer,
+                    contentType: 'application/pdf'
                 }
             ]
         };
@@ -128,8 +128,7 @@ router.post('/send-prestaciones-secundario', upload.single('pdf'), async (req, r
         if (result.recordset.length === 0) {
             return res.status(404).json({ success: false, message: 'Empleado no encontrado' });
         }
-        // Comprimir el archivo PDF
-        const compressedPdfBuffer = zlib.gzipSync(pdfBuffer);
+
         const mailOptions = {
             from: 'IntranetSegurosAltamira@proseguros.com.ve',
             to: correo_secundario,
@@ -137,12 +136,13 @@ router.post('/send-prestaciones-secundario', upload.single('pdf'), async (req, r
             text: `Adjunto encontrarás el PDF con los movimientos de prestaciones sociales del empleado con código ${cod_emp}.`,
             attachments: [
                 {
-                    filename: 'prestaciones.pdf.gz',
-                    content: compressedPdfBuffer,
-                    contentType: 'application/gzip'
+                    filename: 'prestaciones.pdf',
+                    content: pdfBuffer,
+                    contentType: 'application/pdf'
                 }
             ]
         };
+
         // Enviar el correo con reintentos
         const resultMail = await sendMailWithRetry(mailOptions);
 

@@ -63,8 +63,8 @@ router.get('/recibo/:reci_num', async (req, res) => {
 
 // Configuración del transporte de nodemailer
 const transporter = nodemailer.createTransport({
-    host: 'smtp-relay.gmail.com',
-    port: 587,
+    host: '192.168.0.206',
+    port: 25,
     secure: false, // true para 465, false para otros puertos
     tls: {
         rejectUnauthorized: false
@@ -109,20 +109,17 @@ router.post('/send-recibo', upload.single('pdf'), async (req, res) => {
 
         const { correo_e } = result.recordset[0];
 
-        // Comprimir el archivo PDF
-        const compressedPdfBuffer = zlib.gzipSync(pdfBuffer);
-        console.log(`Correo del empleado: ${correo_e}`);
         // Configuración del correo
         const mailOptions = {
             from: 'IntranetSegurosAltamira@proseguros.com.ve',
-            to: "assalas.19@est.ucab.edu.ve",/* correo_e, */
+            to: "assalas.19@est.ucab.edu.ve"/* correo_e */,
             subject: `RECIBO DE PAGO ${reci_num}`,
             text: 'Recibo de Pago',
             attachments: [
                 {
-                    filename: `Recibo_de_Pago_${reci_num}.pdf.gz`,
-                    content: compressedPdfBuffer,
-                    contentType: 'application/gzip'
+                    filename: `Recibo_de_Pago_${reci_num}.pdf`,
+                    content: pdfBuffer,
+                    contentType: 'application/pdf'
                 }
             ]
         };
@@ -160,9 +157,6 @@ router.post('/send-recibo-secundario', upload.single('pdf'), async (req, res) =>
             return res.status(404).json({ success: false, message: 'Empleado no encontrado' });
         }
 
-        // Comprimir el archivo PDF
-        const compressedPdfBuffer = zlib.gzipSync(pdfBuffer);
-
         // Configuración del correo
         const mailOptions = {
             from: 'IntranetSegurosAltamira@proseguros.com.ve',
@@ -171,9 +165,9 @@ router.post('/send-recibo-secundario', upload.single('pdf'), async (req, res) =>
             text: 'Recibo de Pago',
             attachments: [
                 {
-                    filename: `Recibo_de_Pago_${reci_num}.pdf.gz`,
-                    content: compressedPdfBuffer,
-                    contentType: 'application/gzip'
+                    filename: `Recibo_de_Pago_${reci_num}.pdf`,
+                    content: pdfBuffer,
+                    contentType: 'application/pdf'
                 }
             ]
         };

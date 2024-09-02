@@ -4,8 +4,7 @@ import login from './routes/login.routes.js';
 import reciboDePagoRoutes from './routes/recibodepago.routes.js';
 import signupRouter from './routes/signup.routes.js';
 import prestacionesRouter from './routes/prestaciones.routes.js';
-
-
+import arc from './routes/arc.routes.js';
 import cors from 'cors';
 const app = express();
 app.use(express.json()); 
@@ -20,5 +19,6 @@ app.use(signupRouter);
 app.use(login);
 app.use(reciboDePagoRoutes);
 app.use(prestacionesRouter);
+app.use(arc);
 
 export default app;
