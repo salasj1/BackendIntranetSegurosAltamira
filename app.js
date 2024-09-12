@@ -6,6 +6,7 @@ import signupRouter from './routes/signup.routes.js';
 import prestacionesRouter from './routes/prestaciones.routes.js';
 import arc from './routes/arc.routes.js';
 import cors from 'cors';
+import vacacionesRouter from './routes/vacaciones.routes.js'; 
 const app = express();
 app.use(express.json()); 
 app.use(express.urlencoded({ extended: true })); 
@@ -20,5 +21,5 @@ app.use(login);
 app.use(reciboDePagoRoutes);
 app.use(prestacionesRouter);
 app.use(arc);
-
+app.use(vacacionesRouter);
 export default app;

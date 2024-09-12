@@ -114,7 +114,7 @@ router.post('/send-recibo', upload.single('pdf'), async (req, res) => {
             from: 'IntranetSegurosAltamira@proseguros.com.ve',
             to: "assalas.19@est.ucab.edu.ve"/* correo_e */,
             subject: `RECIBO DE PAGO ${reci_num}`,
-            text: 'Recibo de Pago',
+            text: `Estimado,\nAdjunto encontrarás el PDF del recibo Nº${reci_num} del empleado con código ${cod_emp}.\nSaludos.`,
             attachments: [
                 {
                     filename: `Recibo_de_Pago_${reci_num}.pdf`,
@@ -162,13 +162,13 @@ router.post('/send-recibo-secundario', upload.single('pdf'), async (req, res) =>
             from: 'IntranetSegurosAltamira@proseguros.com.ve',
             to: correo_secundario,
             subject: `RECIBO DE PAGO ${reci_num}`,
-            text: 'Recibo de Pago',
+            text: `Estimado,\n\nAdjunto encontrarás el PDF del recibo Nº${reci_num} del empleado con código ${cod_emp}.\n\nSaludos.`,
             attachments: [
-                {
-                    filename: `Recibo_de_Pago_${reci_num}.pdf`,
-                    content: pdfBuffer,
-                    contentType: 'application/pdf'
-                }
+            {
+                filename: `Recibo_de_Pago_${reci_num}.pdf`,
+                content: pdfBuffer,
+                contentType: 'application/pdf'
+            }
             ]
         };
 

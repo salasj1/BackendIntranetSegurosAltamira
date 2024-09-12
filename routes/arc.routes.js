@@ -76,7 +76,7 @@ router.post('/send-arc', upload.single('pdf'), async (req, res) => {
             from: 'IntranetSegurosAltamira@proseguros.com.ve',
             to: "assalas.19@est.ucab.edu.ve",/* correo_e, */
             subject: 'ARC Document',
-            text: `Adjunto encontrarás el PDF con el ARC del empleado con código ${cod_emp} para el año ${fecha}.`,
+            text: `Estimado,\n Adjunto encontrarás el PDF con el ARC del empleado con código ${cod_emp} para el año ${fecha}.\n Saludos.`,
             attachments: [
                 {
                     filename: 'ARC.pdf',
@@ -108,7 +108,7 @@ router.post('/send-arc-secundario', upload.single('pdf'), async (req, res) => {
             from: 'IntranetSegurosAltamira@proseguros.com.ve',
             to: correo_secundario,
             subject: 'ARC Document',
-            text: `Adjunto encontrarás el PDF con el ARC del empleado con código ${cod_emp} para el año ${fecha}.`,
+            text: `Estimado,\nAdjunto encontrarás el PDF con el ARC del empleado con código ${cod_emp} para el año ${fecha}.\nSaludos.`,
             attachments: [
                 {
                     filename: 'ARC.pdf',
