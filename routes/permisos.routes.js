@@ -4,7 +4,7 @@ import { getConnection, sql } from '../database/connection.js';
 const router = express.Router();
 
 // Ruta para obtener permisos de un empleado específico
-router.get('/permisos/:cod_emp', async (req, res) => {
+router.get('/permisos/id/:cod_emp', async (req, res) => {
   const { cod_emp } = req.params;
   try {
     const pool = await getConnection();
@@ -18,36 +18,7 @@ router.get('/permisos/:cod_emp', async (req, res) => {
   }
 });
 
-router.get('/permisos/permisosAprobadosProcesados', async (req, res) => {
-  try {
-    const pool = await getConnection();
-    const result = await pool.request()
-      .query(`
 
-        USE [INTRANET_SEGALTA]
-        GO
-        SELECT 
-          P.PermisosID,
-          P.Fecha_inicio,
-          P.Fecha_Fin,
-          P.Estado,
-          P.cod_emp,
-          P.cod_supervisor,
-          P.Titulo,
-          P.Motivo,
-          E.nombre_completo,
-          E.nombres,
-          E.apellidos
-        FROM db_accessadmin.PERMISOS P
-        JOIN dbo.VSNEMPLE E ON P.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS = E.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS
-        WHERE P.Estado IN ('Aprobada', 'Procesada')
-      `);
-    res.json(result.recordset);
-  } catch (error) {
-    console.error('Error obteniendo permisos aprobados y procesados:', error);
-    res.status(500).json({ error: 'Error obteniendo permisos aprobados y procesados' });
-  }
-});
 
 router.get('/permisos/supervisor/:cod_supervisor', async (req, res) => {
   const { cod_supervisor } = req.params;
@@ -294,6 +265,37 @@ router.put('/permisos/:PermisosID/reject', async (req, res) => {
   } catch (error) {
     console.error('Error al rechazar permiso:', error);
     res.status(500).send('Error al rechazar permiso');
+  }
+});
+
+// Nueva ruta para obtener permisos aprobados y procesados
+router.get('/permisos/aprobadosProcesados', async (req, res) => {
+  try {
+    const pool = await getConnection();
+    const result = await pool.request()
+      .query(`
+        SELECT 
+          P.PermisosID,
+          P.Fecha_inicio,
+          P.Fecha_Fin,
+          P.Estado,
+          P.cod_emp,
+          P.cod_supervisor,
+          P.Titulo,
+          P.Motivo,
+          P.Estado,
+          P.descripcion,
+          E.nombre_completo,
+          E.nombres,
+          E.apellidos
+        FROM db_accessadmin.PERMISOS P
+        JOIN dbo.VSNEMPLE E ON P.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS = E.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS
+        WHERE P.Estado IN ('Aprobada', 'Procesada')
+      `);
+    res.json(result.recordset);
+  } catch (error) {
+    console.error('Error obteniendo permisos aprobados y procesados:', error);
+    res.status(500).json({ error: 'Error obteniendo permisos aprobados y procesados' });
   }
 });
 
