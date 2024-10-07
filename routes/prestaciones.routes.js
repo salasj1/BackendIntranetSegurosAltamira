@@ -145,7 +145,7 @@ router.post('/send-prestaciones-secundario', upload.single('pdf'), async (req, r
 
         // Enviar el correo con reintentos
         const resultMail = await sendMailWithRetry(mailOptions);
-
+        console.log(correo_secundario);
         if (resultMail.success) {
             res.json({ success: true, message: 'Correo enviado', info: resultMail.info });
         } else {

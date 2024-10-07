@@ -43,11 +43,12 @@ router.get('/vacacionesaprobadas', async (req, res) => {
         S.nombre_completo AS nombre_supervisor,
         S.nombres AS nombres_supervisor,
         S.apellidos AS apellidos_supervisor,
+        E.ci,
         V.cod_supervisor
       FROM db_accessadmin.VACACIONES V
       JOIN dbo.VSNEMPLE E ON V.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS = E.cod_emp
       JOIN dbo.VSNEMPLE S ON V.cod_supervisor COLLATE SQL_Latin1_General_CP1_CI_AS = S.cod_emp
-      WHERE V.Estado IN ('aprobada')`);
+      WHERE V.Estado IN ('aprobada','Procesada')`);
     res.json(result.recordset);
   } catch (error) {
     console.error('Error fetching vacaciones:', error);
@@ -118,7 +119,7 @@ router.get('/vacaciones/supervisor/:cod_supervisor', async (req, res) => {
     const result = await pool.request()
       .input('cod_supervisor', sql.Char, cod_supervisor)
       .query(`
-        SELECT 
+        SELECT DISTINCT
           V.VacacionID,
           V.FechaInicio,
           V.FechaFin,
@@ -126,7 +127,8 @@ router.get('/vacaciones/supervisor/:cod_supervisor', async (req, res) => {
           V.cod_emp,
           E.nombres,
           E.apellidos,
-          E.nombre_completo
+          E.nombre_completo,
+          E.ci
         FROM db_accessadmin.VACACIONES V
         JOIN dbo.VSNEMPLE E ON V.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS = E.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS
         JOIN db_accessadmin.SUPERVISION S ON V.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS = S.Cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS
@@ -183,6 +185,33 @@ router.put('/vacaciones/:id/approve', async (req, res) => {
   }
 });
 
+router.put('/vacaciones/:id/process', async (req, res) => {
+  const { id } = req.params;
+  const { cod_RRHH, sCod_emp, sdDesde, sdHasta } = req.body;
+
+  // Calcular el número de días de vacaciones
+  const fechaInicio = new Date(sdDesde);
+  const fechaFin = new Date(sdHasta);
+  const iDias = Math.ceil((fechaFin - fechaInicio) / (1000 * 60 * 60 * 24)) + 1;
+
+  try {
+    const pool = await getConnection();
+    await pool.request()
+      .input('sCod_emp', sql.Char(17), sCod_emp)
+      .input('sCo_Us_In', sql.Char(250), cod_RRHH)
+      .input('sdDesde', sql.SmallDateTime, sdDesde)
+      .input('sdHasta', sql.SmallDateTime, sdHasta)
+      .input('iDias', sql.Int, iDias)
+      .input('VACACIONID', sql.Int, id)
+      .execute('dbo.pInsertarVacacion');
+    
+    res.json({ message: 'Vacaciones procesada exitosamente' });
+  } catch (error) {
+    console.error('Error procesando vacaciones:', error);
+    res.status(500).json({ error: 'Error procesando vacaciones' });
+  }
+});
+
 router.put('/vacaciones/:id/reject', async (req, res) => {
   const { id } = req.params;
 
@@ -230,7 +259,7 @@ router.get('/vacaciones/dias/:cod_emp', async (req, res) => {
       .input('cod_emp', sql.Char, cod_emp)
       .input('fecha', sql.DateTime, new Date())
       .query(`SELECT dbo.ftSAFindDiasVacaCausadas(@cod_emp, @fecha) AS causados`);
-    
+
     const disfrutadosResult = await pool.request()
       .input('cod_emp', sql.Char, cod_emp)
       .query(`SELECT dbo.ftSAFindDiasVacaDisfrutados(@cod_emp) AS disfrutados`);

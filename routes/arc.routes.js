@@ -9,24 +9,24 @@ const upload = multer();
 router.get('/arc/:cod_emp', async (req, res) => {
     let { cod_emp } = req.params;
     const { fecha } = req.query;
-    cod_emp = cod_emp.trim().replace(/\D/g, '');
-
+  
+    // Validar que cod_emp y fecha sean números
     if (isNaN(cod_emp) || isNaN(fecha)) {
-        return res.status(400).json({ success: false, message: 'Invalid cod_emp or fecha value' });
+      return res.status(400).json({ success: false, message: 'Invalid cod_emp or fecha value' });
     }
-
+  
     try {
-        const pool = await getConnection();
-        const result = await pool.request()
-            .input('sCo_Emp', sql.Char(17), cod_emp)
-            .input('iAnhio', sql.Int, fecha)
-            .execute('spSARepComprobanteRetencionARC');
-        res.json(result.recordset);
+      const pool = await getConnection();
+      const result = await pool.request()
+        .input('sCo_Emp', sql.Char(17), cod_emp)
+        .input('iAnhio', sql.Int, fecha)
+        .execute('spSARepComprobanteRetencionARC');
+      res.json(result.recordset);
     } catch (error) {
-        console.error('Error fetching ARC data:', error);
-        res.status(500).json({ success: false, message: 'Failed to fetch data', error });
+      console.error('Error fetching ARC data:', error);
+      res.status(500).json({ success: false, message: 'Failed to fetch data', error });
     }
-});
+  });
 
 const transporter = nodemailer.createTransport({
     host: '192.168.0.206',
