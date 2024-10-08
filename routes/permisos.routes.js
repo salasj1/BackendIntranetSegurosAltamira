@@ -203,11 +203,11 @@ router.put('/permisos/:PermisosID/process', async (req, res) => {
       .input('cod_supervisor', sql.Char, cod_supervisor)
       .query(`
         UPDATE [db_accessadmin].[PERMISOS]
-        SET Estado = 'Aprobada', cod_supervisor = @cod_supervisor
+        SET Estado = 'Procesada', cod_supervisor = @cod_supervisor
         WHERE PermisosID = @PermisosID
       `);
 
-    res.json({ message: 'Vacaciones aprobadas exitosamente' });
+    res.json({ message: 'Vacaciones procesadas exitosamente' });
   } catch (error) {
     console.error('Error aprobando vacaciones:', error);
     res.status(500).json({ error: 'Error aprobando vacaciones' });
@@ -274,7 +274,7 @@ router.get('/permisos/aprobadosProcesados', async (req, res) => {
     const pool = await getConnection();
     const result = await pool.request()
       .query(`
-        SELECT 
+        SELECT DISTINCT
           P.PermisosID,
           P.Fecha_inicio,
           P.Fecha_Fin,
@@ -287,7 +287,8 @@ router.get('/permisos/aprobadosProcesados', async (req, res) => {
           P.descripcion,
           E.nombre_completo,
           E.nombres,
-          E.apellidos
+          E.apellidos,
+          E.ci
         FROM db_accessadmin.PERMISOS P
         JOIN dbo.VSNEMPLE E ON P.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS = E.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS
         WHERE P.Estado IN ('Aprobada', 'Procesada')
