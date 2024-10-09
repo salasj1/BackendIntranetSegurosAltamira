@@ -46,7 +46,7 @@ router.get('/permisos/supervisor/:cod_supervisor', async (req, res) => {
         JOIN dbo.VSNEMPLE E ON P.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS = E.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS
         JOIN db_accessadmin.SUPERVISION S ON P.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS = S.Cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS
         WHERE S.Cod_supervisor COLLATE SQL_Latin1_General_CP1_CI_AS = @cod_supervisor
-        AND P.Estado IN ('Aprobada', 'Pendiente','Rechazada')
+        AND P.Estado IN ('Aprobada', 'Pendiente','Rechazada','Procesada')
       `);
     res.json(result.recordset);
   } catch (error) {
@@ -236,7 +236,7 @@ router.put('/permisos/:PermisosID/approve', async (req, res) => {
       .input('cod_supervisor', sql.Char, cod_supervisor)
       .query(`
         UPDATE [db_accessadmin].[PERMISOS]
-        SET Estado = 'Procesada', cod_supervisor = @cod_supervisor
+        SET Estado = 'Aprobada', cod_supervisor = @cod_supervisor
         WHERE PermisosID = @PermisosID
       `);
 
