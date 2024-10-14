@@ -7,7 +7,8 @@ router.get('/empleados', async (req, res) => {
   try {
     const pool = await getConnection();
     const result = await pool.request().query(`
-      SELECT 
+      SELECT DISTINCT
+        cod_emp,
         nombres,
         apellidos,
         des_depart,
