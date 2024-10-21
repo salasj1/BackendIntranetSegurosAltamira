@@ -184,7 +184,7 @@ router.get('/permisos/nuevos/:cod_supervisor', async (req, res) => {
 // Ruta para aprobar un permiso
 router.put('/permisos/:PermisosID/process', async (req, res) => {
   const { PermisosID } = req.params;
-  const { cod_supervisor } = req.body;
+  const { cod_RRHH } = req.body;
 
   try {
     const pool = await getConnection();
@@ -197,13 +197,13 @@ router.put('/permisos/:PermisosID/process', async (req, res) => {
     if (estado === 'Aprobada') {
       return res.status(400).json({ message: 'Las vacaciones ya han sido aprobadas anteriormente.' });
     }
-      console.log("Pasó por aquí ", PermisosID," ", cod_supervisor);
+      console.log("Pasó por aquí ", PermisosID," ", cod_RRHH);
     await pool.request()
       .input('PermisosID', sql.Int, PermisosID)
-      .input('cod_supervisor', sql.Char, cod_supervisor)
+      .input('cod_RRHH', sql.Char, cod_RRHH)
       .query(`
         UPDATE [db_accessadmin].[PERMISOS]
-        SET Estado = 'Procesada', cod_supervisor = @cod_supervisor
+        SET Estado = 'Procesada', cod_RRHH = @cod_RRHH
         WHERE PermisosID = @PermisosID
       `);
 

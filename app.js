@@ -13,7 +13,7 @@ const app = express();
 app.use(express.json()); 
 app.use(express.urlencoded({ extended: true })); 
 app.use(cors({
-    origin: 'http://localhost:5173', // Asegúrate de que esta URL coincide con la del cliente
+    origin: '*', // Permitir cualquier origen
     credentials: true
 }));
 
