@@ -3,7 +3,7 @@ import { getConnection, sql } from '../database/connection.js';
 
 const router = express.Router();
 
-router.get('/vacaciones/:cod_emp', async (req, res) => {
+router.get('/vacaciones/id/:cod_emp', async (req, res) => {
   const { cod_emp } = req.params;
 
   try {
@@ -308,4 +308,21 @@ router.get('/vacaciones/estados', async (req, res) => {
   }
 });
 
+router.get('/vacaciones/fechaMaximaFin', async (req, res) => {
+  const { fechaInicio, diasDisfrutar } = req.query;
+
+  try {
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('FechaInicio', sql.Date, fechaInicio)
+      .input('DiasDisfrutar', sql.Int, diasDisfrutar)
+      .query(`
+        SELECT dbo.ftSACalcularFechaMaximaFinVacaciones(@FechaInicio, @DiasDisfrutar) AS FechaMaximaFin
+      `);
+    res.json({ fechaMaximaFin: result.recordset[0].FechaMaximaFin });
+  } catch (error) {
+    console.error('Error calculando la fecha máxima de fin de vacaciones:', error);
+    res.status(500).json({ error: 'Error calculando la fecha máxima de fin de vacaciones' });
+  }
+});
 export default router;
