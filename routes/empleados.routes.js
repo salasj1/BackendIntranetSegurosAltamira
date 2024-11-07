@@ -31,6 +31,7 @@ router.get('/empleados/control', async (req, res) => {
     const pool = await getConnection();
     const result = await pool.request().query(`
         SELECT DISTINCT
+        
         E.cod_emp,
         E.ci as cedula_empleado,
         E.nombres AS nombres_empleado,
@@ -47,6 +48,26 @@ router.get('/empleados/control', async (req, res) => {
   } catch (error) {
     console.error('Error fetching empleados detalles:', error);
     res.status(500).json({ error: 'Error fetching empleados detalles' });
+  }
+});
+
+router.put('/empleados/supervision/Tipo', async (req, res) => {
+  const { ID_SUPERVISION, Tipo } = req.body;
+  try {
+    const pool = await getConnection();
+    await pool.request()
+
+      .input('ID_SUPERVISION', sql.Int, ID_SUPERVISION)
+      .input('Tipo', sql.VarChar, Tipo)
+      .query(`
+        UPDATE SUPERVISION
+        SET Tipo = @Tipo
+        WHERE ID_SUPERVISION = @ID_SUPERVISION
+      `);
+    res.status(200).send('Supervisión actualizada correctamente');
+  } catch (error) {
+    console.error('Error updating supervision:', error);
+    res.status(500).json({ error: 'Error updating supervision' });
   }
 });
 
@@ -132,6 +153,39 @@ router.post('/empleados/supervision', async (req, res) => {
     res.status(500).json({ error: 'Error agregando supervisión' });
   }
 });
+
+
+
+router.get('/empleados/supervision', async (req, res) => {
+  const { cod_emp, cod_supervisor } = req.query;
+  try {
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('cod_emp', sql.VarChar, cod_emp)
+      .input('cod_supervisor', sql.VarChar, cod_supervisor)
+      .query(`
+        SELECT DISTINCT
+        S.ID_SUPERVISION,
+        A.cod_emp ,
+        A.ci As cedula_empleado,
+        A.nombre_completo AS nombre_empleado,
+        B.cod_emp AS cod_supervisor,
+        B.ci AS cedula_supervisor,
+        B.nombre_completo AS nombre_supervisor,
+        S.Tipo
+        FROM VSNEMPLE A INNER JOIN SUPERVISION S ON A.cod_emp COLLATE Modern_Spanish_CI_AS = S.Cod_emp COLLATE Modern_Spanish_CI_AS INNER JOIN VSNEMPLE B ON B.cod_emp COLLATE Modern_Spanish_CI_AS = S.Cod_supervisor COLLATE Modern_Spanish_CI_AS
+        WHERE A.cod_emp = @cod_emp AND B.cod_emp = @cod_supervisor
+      `);
+    if (result.recordset.length === 0) {
+      return res.status(404).json({ error: 'Supervisión no encontrada' });
+    }
+    res.json(result.recordset[0]);
+  } catch (error) {
+    console.error('Error fetching supervision:', error);
+    res.status(500).json({ error: 'Error fetching supervision' });
+  }
+});
+
 
 
 
