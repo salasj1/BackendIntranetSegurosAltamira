@@ -74,7 +74,7 @@ router.post('/send-arc', upload.single('pdf'), async (req, res) => {
         const { correo_e } = result.recordset[0];
         const mailOptions = {
             from: 'IntranetSegurosAltamira@proseguros.com.ve',
-            to: "assalas.19@est.ucab.edu.ve",/* correo_e, */
+            to:  correo_e, 
             subject: 'ARC Document',
             text: `Estimado,\n Adjunto encontrarás el PDF con el ARC del empleado con código ${cod_emp} para el año ${fecha}.\n Saludos.`,
             attachments: [

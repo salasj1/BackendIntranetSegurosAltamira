@@ -85,7 +85,7 @@ router.post('/send-prestaciones', upload.single('pdf'), async (req, res) => {
         //const compressedPdfBuffer = zlib.gzipSync(pdfBuffer);
         const mailOptions = {
             from: 'IntranetSegurosAltamira@proseguros.com.ve',
-            to: "assalas.19@est.ucab.edu.ve",/* correo_e, */
+            to:  correo_e, 
             subject: 'Movimientos de Prestaciones Sociales',
             text: `Adjunto encontrarás el PDF con los movimientos de prestaciones sociales del empleado con código ${cod_emp}.`,
             attachments: [

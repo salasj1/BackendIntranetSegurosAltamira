@@ -112,7 +112,7 @@ router.post('/send-recibo', upload.single('pdf'), async (req, res) => {
         // Configuración del correo
         const mailOptions = {
             from: 'IntranetSegurosAltamira@proseguros.com.ve',
-            to: "assalas.19@est.ucab.edu.ve"/* correo_e */,
+            to: correo_e ,
             subject: `RECIBO DE PAGO ${reci_num}`,
             text: `Estimado,\nAdjunto encontrarás el PDF del recibo Nº${reci_num} del empleado con código ${cod_emp}.\nSaludos.`,
             attachments: [
@@ -186,25 +186,7 @@ router.post('/send-recibo-secundario', upload.single('pdf'), async (req, res) =>
     }
 });
 
-// Ruta para enviar un correo de prueba
-router.post('/send-test-email', async (req, res) => {
-    // Configuración del correo
-    const mailOptions = {
-        from: 'IntranetSegurosAltamira@proseguros.com.ve',
-        to: 'assalas.19@est.ucab.edu.ve',
-        subject: 'Correo de Prueba',
-        text: 'Este es un correo de prueba para verificar la configuración de nodemailer.'
-    };
 
-    // Enviar el correo con reintentos
-    const resultMail = await sendMailWithRetry(mailOptions);
-
-    if (resultMail.success) {
-        res.json({ success: true, message: 'Correo enviado', info: resultMail.info });
-    } else {
-        res.status(500).json({ success: false, message: 'Error enviando el correo', error: resultMail.error });
-    }
-});
 
 
 export default router;

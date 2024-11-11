@@ -46,7 +46,7 @@ router.get('/permisos/supervisor/:cod_supervisor', async (req, res) => {
         JOIN dbo.VSNEMPLE E ON P.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS = E.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS
         JOIN db_accessadmin.SUPERVISION S ON P.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS = S.Cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS
         WHERE S.Cod_supervisor COLLATE SQL_Latin1_General_CP1_CI_AS = @cod_supervisor
-        AND P.Estado IN ('Aprobada', 'Pendiente','Rechazada','Procesada')
+        AND P.Estado IN ('Aprobada', 'Pendiente','Rechazada','Procesada') AND S.Tipo=2
       `);
     res.json(result.recordset);
   } catch (error) {
@@ -190,7 +190,7 @@ router.put('/permisos/:PermisosID/process', async (req, res) => {
     const pool = await getConnection();
     const result = await pool.request()
       .input('PermisosID', sql.Int, PermisosID)
-      .query('SELECT Estado FROM db_accessadmin.VACACIONES WHERE VacacionID = @PermisosID');
+      .query('SELECT Estado FROM db_accessadmin.PERMISOS WHERE PermisosID = @PermisosID');
 
     const estado = result.recordset[0]?.Estado;
 
@@ -199,13 +199,9 @@ router.put('/permisos/:PermisosID/process', async (req, res) => {
     }
       console.log("Pasó por aquí ", PermisosID," ", cod_RRHH);
     await pool.request()
-      .input('PermisosID', sql.Int, PermisosID)
+            .input('PermisosID', sql.Int, PermisosID)
       .input('cod_RRHH', sql.Char, cod_RRHH)
-      .query(`
-        UPDATE [db_accessadmin].[PERMISOS]
-        SET Estado = 'Procesada', cod_RRHH = @cod_RRHH
-        WHERE PermisosID = @PermisosID
-      `);
+      .execute('sp_UpdatePermisos');
 
     res.json({ message: 'Vacaciones procesadas exitosamente' });
   } catch (error) {

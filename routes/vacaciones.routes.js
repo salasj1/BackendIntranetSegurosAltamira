@@ -132,8 +132,8 @@ router.get('/vacaciones/supervisor/:cod_supervisor', async (req, res) => {
         FROM db_accessadmin.VACACIONES V
         JOIN dbo.VSNEMPLE E ON V.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS = E.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS
         JOIN db_accessadmin.SUPERVISION S ON V.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS = S.Cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS
-        WHERE S.Cod_supervisor COLLATE SQL_Latin1_General_CP1_CI_AS = @cod_supervisor
-        AND V.Estado IN ('solicitada', 'aprobada')
+        WHERE S.Cod_supervisor COLLATE SQL_Latin1_General_CP1_CI_AS = '000004'
+        AND V.Estado IN ('solicitada', 'aprobada') AND S.Tipo=1
       `);
     res.json(result.recordset);
   } catch (error) {

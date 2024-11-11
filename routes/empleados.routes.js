@@ -167,15 +167,19 @@ router.get('/empleados/supervision', async (req, res) => {
         SELECT DISTINCT
         S.ID_SUPERVISION,
         A.cod_emp ,
+		    A.des_depart as departamento_empleado,
+		    A.des_cargo as  cargo_empleado,
         A.ci As cedula_empleado,
         A.nombre_completo AS nombre_empleado,
         B.cod_emp AS cod_supervisor,
         B.ci AS cedula_supervisor,
         B.nombre_completo AS nombre_supervisor,
+        B.des_depart as departamento_supervisor,
+        B.des_cargo as cargo_supervisor,
         S.Tipo
         FROM VSNEMPLE A INNER JOIN SUPERVISION S ON A.cod_emp COLLATE Modern_Spanish_CI_AS = S.Cod_emp COLLATE Modern_Spanish_CI_AS INNER JOIN VSNEMPLE B ON B.cod_emp COLLATE Modern_Spanish_CI_AS = S.Cod_supervisor COLLATE Modern_Spanish_CI_AS
         WHERE A.cod_emp = @cod_emp AND B.cod_emp = @cod_supervisor
-      `);
+      `); 
     if (result.recordset.length === 0) {
       return res.status(404).json({ error: 'Supervisión no encontrada' });
     }
