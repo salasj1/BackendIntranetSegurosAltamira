@@ -3,7 +3,9 @@ import { getConnection, sql } from '../database/connection.js';
 
 const router = express.Router();
 
+// Ruta para obtener todos los empleados
 router.get('/empleados', async (req, res) => {
+  console.log('Request GET received for /empleados');
   try {
     const pool = await getConnection();
     const result = await pool.request().query(`
@@ -26,23 +28,30 @@ router.get('/empleados', async (req, res) => {
   }
 });
 
+// Ruta para obtener detalles de supervisión de empleados
 router.get('/empleados/control', async (req, res) => {
+  console.log('Request GET received for /empleados/control');
   try {
     const pool = await getConnection();
     const result = await pool.request().query(`
-        SELECT DISTINCT
-        
-        E.cod_emp,
-        E.ci as cedula_empleado,
-        E.nombres AS nombres_empleado,
-        E.apellidos AS apellidos_empleado,
-        S.cod_emp AS cod_supervisor,
-        S.ci AS cedula_supervisor,
-        S.nombres AS nombres_supervisor,
-        S.apellidos AS apellidos_supervisor,
-        A.Tipo as Tipo,
-        E.Nomina
+      CREATE TABLE #TIPOS_SUP (tipo int, nombre varchar(max))
+      insert #TIPOS_SUP
+      EXEC spCargarTipoSupervision
+
+      SELECT DISTINCT
+      E.cod_emp,
+      E.ci as cedula_empleado,
+      E.nombres AS nombres_empleado,
+      E.apellidos AS apellidos_empleado,
+      S.cod_emp AS cod_supervisor,
+      S.ci AS cedula_supervisor,
+      S.nombres AS nombres_supervisor,
+      S.apellidos AS apellidos_supervisor,
+      ISNULL(T.nombre,A.Tipo) as Tipo,
+      E.Nomina
       FROM VSNEMPLE E INNER JOIN SUPERVISION A ON E.cod_emp COLLATE Modern_Spanish_CI_AS =A.Cod_emp COLLATE Modern_Spanish_CI_AS INNER JOIN VSNEMPLE S ON S.cod_emp COLLATE Modern_Spanish_CI_AS=A.Cod_supervisor COLLATE Modern_Spanish_CI_AS
+      LEFT JOIN #TIPOS_SUP T ON A.Tipo = T.tipo
+      DROP TABLE #TIPOS_SUP
     `);
     res.json(result.recordset);
   } catch (error) {
@@ -51,7 +60,9 @@ router.get('/empleados/control', async (req, res) => {
   }
 });
 
+// Ruta para actualizar el tipo de supervisión
 router.put('/empleados/supervision/Tipo', async (req, res) => {
+  console.log('Request PUT received for /empleados/supervision/Tipo');
   const { ID_SUPERVISION, Tipo } = req.body;
   try {
     const pool = await getConnection();
@@ -71,7 +82,9 @@ router.put('/empleados/supervision/Tipo', async (req, res) => {
   }
 });
 
+// Ruta para eliminar el número de teléfono de un empleado
 router.put('/empleados/:cod_emp/telefono', async (req, res) => {
+  console.log(`Request PUT received for /empleados/${req.params.cod_emp}/telefono`);
   const { cod_emp } = req.params;
   const { tlf_oficina } = req.body;
 
@@ -115,7 +128,9 @@ router.put('/empleados/:cod_emp/telefono', async (req, res) => {
   }
 });
 
+// Ruta para eliminar el número de teléfono de un empleado
 router.delete('/empleados/:cod_emp/telefono', async (req, res) => {
+  console.log(`Request DELETE received for /empleados/${req.params.cod_emp}/telefono`);
   const { cod_emp } = req.params;
 
   try {
@@ -134,29 +149,33 @@ router.delete('/empleados/:cod_emp/telefono', async (req, res) => {
   }
 });
 
+// Ruta para agregar una nueva supervisión
 router.post('/empleados/supervision', async (req, res) => {
+  console.log('Request POST received for /empleados/supervision');
   const { supervisor, supervisados, tipo } = req.body;
 
   try {
     const pool = await getConnection();
     const supervisadosXml = `<Supervisados>${supervisados.map(s => `<supervisado>${s}</supervisado>`).join('')}</Supervisados>`;
-
+    console.log("Antes de insertar");
     await pool.request()
       .input('supervisor', sql.Char(17), supervisor)
       .input('supervisados', sql.NVarChar, supervisadosXml)
       .input('tipo', sql.VarChar(50), tipo)
       .execute('spAgregarSupervision');
-
+      console.log("Despues de insertar");
     res.json({ message: 'Supervisión agregada correctamente' });
   } catch (error) {
     console.error('Error agregando supervisión:', error);
+    
     res.status(500).json({ error: 'Error agregando supervisión' });
   }
 });
 
 
-
+// Ruta para obtener detalles de supervisión de un empleado específico
 router.get('/empleados/supervision', async (req, res) => {
+  console.log('Request GET received for /empleados/supervision');
   const { cod_emp, cod_supervisor } = req.query;
   try {
     const pool = await getConnection();
@@ -190,7 +209,37 @@ router.get('/empleados/supervision', async (req, res) => {
   }
 });
 
+// Ruta para eliminar una supervisión
+router.delete('/empleados/supervision', async (req, res) => {
+  console.log('Request DELETE received for /empleados/supervision');
+  const { ID_SUPERVISION } = req.body;
 
+  try {
+    const pool = await getConnection();
+    await pool.request()
+      .input('ID_SUPERVISION', sql.Int, ID_SUPERVISION)
+      .query(`
+        DELETE FROM SUPERVISION
+        WHERE ID_SUPERVISION = @ID_SUPERVISION
+      `);
+    res.json({ message: 'Supervisión eliminada correctamente' });
+  } catch (error) {
+    console.error('Error eliminando supervisión:', error);
+    res.status(500).json({ error: 'Error eliminando supervisión' });
+  }
+});
 
+// Nueva ruta para cargar tipos de supervisión
+router.get('/empleados/tipos-supervision', async (req, res) => {
+  console.log('Request received for /empleados/tipos-supervision');
+  try {
+    const pool = await getConnection();
+    const result = await pool.request().execute('spCargarTipoSupervision');
+    res.json(result.recordset);
+  } catch (error) {
+    console.error('Error cargando tipos de supervisión:', error);
+    res.status(500).json({ error: 'Error cargando tipos de supervisión' });
+  }
+});
 
 export default router;

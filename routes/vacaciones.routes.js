@@ -3,8 +3,11 @@ import { getConnection, sql } from '../database/connection.js';
 
 const router = express.Router();
 
+// Se obtienen las vacaciones de un empleado
 router.get('/vacaciones/id/:cod_emp', async (req, res) => {
   const { cod_emp } = req.params;
+
+  console.log('Request GET received for /vacaciones/id/:cod_emp');
 
   try {
     const pool = await getConnection();
@@ -27,7 +30,11 @@ router.get('/vacaciones/id/:cod_emp', async (req, res) => {
   }
 });
 
+// Se obtienen las vacaciones aprobadas
 router.get('/vacacionesaprobadas', async (req, res) => {
+
+  console.log('Request GET received for /vacacionesaprobadas');
+
   try {
     const pool = await getConnection();
     const result = await pool.request()
@@ -56,8 +63,11 @@ router.get('/vacacionesaprobadas', async (req, res) => {
   }
 });
 
+// Se publica una solicitud de vacaciones
 router.post('/vacaciones', async (req, res) => {
   const { cod_emp, FechaInicio, FechaFin, Estado, cod_supervisor, cod_RRHH } = req.body;
+
+  console.log('Request POST received for /vacaciones');
 
   try {
     const pool = await getConnection();
@@ -79,8 +89,12 @@ router.post('/vacaciones', async (req, res) => {
   }
 });
 
+// Se obtienen las vacaciones aprobadas
 router.get('/vacacionesAprobadas', async (req, res) => {
   const { cod_emp, FechaInicio, FechaFin, Estado } = req.body;
+
+  console.log('Request GET received for /vacacionesAprobadas');
+
   try {
     const pool = await getConnection();
     await pool.request()
@@ -111,8 +125,11 @@ router.get('/vacacionesAprobadas', async (req, res) => {
   }
 });
 
+// Se obtienen las vacaciones aprobadas para el supervisor para su aprobación
 router.get('/vacaciones/supervisor/:cod_supervisor', async (req, res) => {
   const { cod_supervisor } = req.params;
+
+  console.log('Request GET received for /vacaciones/supervisor/:cod_supervisor');
 
   try {
     const pool = await getConnection();
@@ -142,9 +159,12 @@ router.get('/vacaciones/supervisor/:cod_supervisor', async (req, res) => {
   }
 });
 
+//Se modifica una solicitud de vacaciones cambiandole las fechas
 router.put('/vacaciones/:id', async (req, res) => {
   const { id } = req.params;
   const { FechaInicio, FechaFin } = req.body;
+
+  console.log('Request PUT received for /vacaciones/:id');
 
   try {
     const pool = await getConnection();
@@ -164,27 +184,48 @@ router.put('/vacaciones/:id', async (req, res) => {
   }
 });
 
+//Se aprueban las vacaciones
 router.put('/vacaciones/:id/approve', async (req, res) => {
   const { id } = req.params;
   const { cod_supervisor } = req.body;
 
+  console.log('Request PUT received for /vacaciones/:id/approve');
+
   try {
     const pool = await getConnection();
-    await pool.request()
+    const transaction = new sql.Transaction(pool);
+
+    await transaction.begin(sql.ISOLATION_LEVEL.SERIALIZABLE);
+
+    const result = await transaction.request()
+      .input('id', sql.Int, id)
+      .query('SELECT Estado FROM [db_accessadmin].[VACACIONES] WHERE VacacionID = @id');
+
+    if (result.recordset.length === 0) {
+      await transaction.rollback();
+      return res.status(404).send('Vacación no encontrada');
+    }
+
+    const vacacion = result.recordset[0];
+    if (vacacion.Estado !== 'solicitada' ) {
+      await transaction.rollback();
+      return res.status(400).send(`La vacación ya ha sido ${vacacion.Estado.toLowerCase()}`);
+    }
+
+    await transaction.request()
       .input('id', sql.Int, id)
       .input('cod_supervisor', sql.Char, cod_supervisor)
-      .query(`
-        UPDATE db_accessadmin.VACACIONES
-        SET Estado = 'Aprobada', cod_supervisor = @cod_supervisor
-        WHERE VacacionID = @id
-      `);
-    res.json({ message: 'Vacaciones aprobadas exitosamente' });
+      .query('UPDATE [db_accessadmin].[VACACIONES] SET Estado = \'Aprobada\', cod_supervisor = @cod_supervisor WHERE VacacionID = @id');
+
+    await transaction.commit();
+    res.send('Vacaciones aprobadas exitosamente');
   } catch (error) {
     console.error('Error aprobando vacaciones:', error);
-    res.status(500).json({ error: 'Error aprobando vacaciones' });
+    res.status(500).send('Error aprobando vacaciones');
   }
 });
 
+//Se procesan las vacaciones
 router.put('/vacaciones/:id/process', async (req, res) => {
   const { id } = req.params;
   const { cod_RRHH, sCod_emp, sdDesde, sdHasta } = req.body;
@@ -193,10 +234,31 @@ router.put('/vacaciones/:id/process', async (req, res) => {
   const fechaInicio = new Date(sdDesde);
   const fechaFin = new Date(sdHasta);
   const iDias = Math.ceil((fechaFin - fechaInicio) / (1000 * 60 * 60 * 24)) + 1;
-
+  
+  console.log('Request PUT received for /vacaciones/:id/process');
+  
   try {
     const pool = await getConnection();
-    await pool.request()
+    const transaction = new sql.Transaction(pool);
+
+    await transaction.begin(sql.ISOLATION_LEVEL.SERIALIZABLE);
+
+    const result = await transaction.request()
+      .input('id', sql.Int, id)
+      .query('SELECT Estado FROM [db_accessadmin].[VACACIONES] WHERE VacacionID = @id');
+
+    if (result.recordset.length === 0) {
+      await transaction.rollback();
+      return res.status(404).send('Vacación no encontrada');
+    }
+
+    const vacacion = result.recordset[0];
+    if (vacacion.Estado !== 'Aprobada') {
+      await transaction.rollback();
+      return res.status(400).send(`La vacación ya ha sido ${vacacion.Estado.toLowerCase()}`);
+    }
+
+    await transaction.request()
       .input('sCod_emp', sql.Char(17), sCod_emp)
       .input('sCo_Us_In', sql.Char(250), cod_RRHH)
       .input('sdDesde', sql.SmallDateTime, sdDesde)
@@ -204,30 +266,49 @@ router.put('/vacaciones/:id/process', async (req, res) => {
       .input('iDias', sql.Int, iDias)
       .input('VACACIONID', sql.Int, id)
       .execute('dbo.pInsertarVacacion');
-    
-    res.json({ message: 'Vacaciones procesada exitosamente' });
+
+    await transaction.commit();
+    res.send('Vacaciones procesadas exitosamente');
   } catch (error) {
     console.error('Error procesando vacaciones:', error);
-    res.status(500).json({ error: 'Error procesando vacaciones' });
+    res.status(500).send('Error procesando vacaciones');
   }
 });
 
+//Se rechazan las vacaciones
 router.put('/vacaciones/:id/reject', async (req, res) => {
   const { id } = req.params;
 
   try {
     const pool = await getConnection();
-    await pool.request()
+    const transaction = new sql.Transaction(pool);
+
+    await transaction.begin(sql.ISOLATION_LEVEL.SERIALIZABLE);
+
+    const result = await transaction.request()
       .input('id', sql.Int, id)
-      .query(`
-        UPDATE db_accessadmin.VACACIONES
-        SET Estado = 'emitida'
-        WHERE VacacionID = @id
-      `);
-    res.json({ message: 'Vacaciones devueltas exitosamente' });
+      .query('SELECT Estado FROM [db_accessadmin].[VACACIONES] WHERE VacacionID = @id');
+
+    if (result.recordset.length === 0) {
+      await transaction.rollback();
+      return res.status(404).send('Vacación no encontrada');
+    }
+
+    const vacacion = result.recordset[0];
+    if (vacacion.Estado !== 'solicitada') {
+      await transaction.rollback();
+      return res.status(400).send(`La vacación ya ha sido ${vacacion.Estado.toLowerCase()}`);
+    }
+
+    await transaction.request()
+      .input('id', sql.Int, id)
+      .query('UPDATE [db_accessadmin].[VACACIONES] SET Estado = \'Rechazada\' WHERE VacacionID = @id');
+
+    await transaction.commit();
+    res.send('Vacaciones rechazadas exitosamente');
   } catch (error) {
-    console.error('Error devolviendo vacaciones:', error);
-    res.status(500).json({ error: 'Error devolviendo vacaciones' });
+    console.error('Error rechazando vacaciones:', error);
+    res.status(500).send('Error rechazando vacaciones');
   }
 });
 
@@ -274,6 +355,7 @@ router.get('/vacaciones/dias/:cod_emp', async (req, res) => {
   }
 });
 
+// Se modifican las vacaciones emitidas para solicitarlo formalmente al supervisor
 router.put('/vacaciones/:id/solicitar', async (req, res) => {
   const { id } = req.params;
 
@@ -308,6 +390,7 @@ router.get('/vacaciones/estados', async (req, res) => {
   }
 });
 
+// Se obtiene la fecha máxima de fin de vacaciones
 router.get('/vacaciones/fechaMaximaFin', async (req, res) => {
   const { fechaInicio, diasDisfrutar } = req.query;
 

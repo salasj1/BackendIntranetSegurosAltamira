@@ -4,10 +4,12 @@ import { getConnection, sql } from '../database/connection.js';
 
 const router = express.Router();
 
+// Ruta para el inicio de sesión
 router.post('/login', async (req, res) => {
     const { username, password } = req.body;
-
+    console.log(`Login attempt for username: ${username}`);
     try {
+        console.log('Request POST received for /login');
         const pool = await getConnection();
         const result = await pool.request()
             .input('username', sql.NVarChar, username)
@@ -16,8 +18,7 @@ router.post('/login', async (req, res) => {
                 FROM snusuarios u
                 JOIN VSNEMPLE e ON u.cod_emp COLLATE Modern_Spanish_CI_AS = e.cod_emp COLLATE Modern_Spanish_CI_AS
                 WHERE u.username = @username COLLATE Modern_Spanish_CI_AS;
-            `);
-            console.log(`Query result: ${JSON.stringify(result.recordset)}`);
+            `);           
         if (result.recordset.length > 0) {
             const user = result.recordset[0];
             const passwordMatch = await bcrypt.compare(password, user.password);

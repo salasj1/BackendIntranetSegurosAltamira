@@ -9,20 +9,19 @@ const upload = multer(); // Middleware para manejar archivos
 //Se obtienen la lista de recibos de pago de un empleado
 router.get('/recibos/:cod_emp', async (req, res) => {
     const { cod_emp } = req.params;
-
+    
+    console.log(`Request GET received for recibos: cod_emp=${cod_emp}`);
     try {
-        console.log(`Received request for cod_emp: ${cod_emp}`); 
-
+        
         const pool = await getConnection();
         const result = await pool.request()
-            .input('cod_emp', sql.Int, parseInt(cod_emp, 10))
+            .input('cod_emp', sql.Char, cod_emp)
             .query(`
-                SELECT *
-                FROM [INTRANET_SEGALTA].[dbo].[VRECIBOS_LISTA]
-                WHERE cod_emp = @cod_emp;
+            SELECT *
+            FROM [INTRANET_SEGALTA].[dbo].[VRECIBOS_LISTA]
+            WHERE cod_emp = @cod_emp;
             `);
                 // [reci_num], [cod_emp], [AÑIO], [Mes], [Contrato]
-        console.log(`Query result: ${JSON.stringify(result.recordset)}`);
 
         
         const normalizedData = result.recordset.map(record => ({
@@ -41,17 +40,20 @@ router.get('/recibos/:cod_emp', async (req, res) => {
 });
 
 //Se obtiene el detalle de un recibo de pago
-router.get('/recibo/:reci_num', async (req, res) => {
-    const { reci_num } = req.params;
+router.get('/recibo/:reci_num/:cod_emp', async (req, res) => {
+    const { reci_num , cod_emp} = req.params;
+    
 
+    console.log(`Request GET received for recibo: reci_num=${reci_num}, cod_emp=${cod_emp}`);
     try {
         const pool = await getConnection();
         const result = await pool.request()
             .input('Reci_Num', sql.Int, parseInt(reci_num, 10))
+            .input('cod_emp', sql.Int, parseInt(cod_emp, 10))
             .execute('RepReciboPago');
 
         const data = result.recordset;
-        console.log(`Query result: ${JSON.stringify(data)}`);
+        
         res.json(data);
     } catch (error) {
         console.error('ERROR: ' + JSON.stringify(error));
@@ -93,6 +95,7 @@ router.post('/send-recibo', upload.single('pdf'), async (req, res) => {
     const { reci_num, cod_emp } = req.body;
     const pdfBuffer = req.file.buffer;
 
+    console.log(`Request POST received to send recibo: reci_num=${reci_num}, cod_emp=${cod_emp}`);
     try {
         const pool = await getConnection();
         const result = await pool.request()
@@ -143,6 +146,7 @@ router.post('/send-recibo-secundario', upload.single('pdf'), async (req, res) =>
     const { reci_num, cod_emp, correo_secundario } = req.body;
     const pdfBuffer = req.file.buffer;
 
+    console.log(`Request POST received to send recibo to secondary email: reci_num=${reci_num}, cod_emp=${cod_emp}, correo_secundario=${correo_secundario}`);
     try {
         const pool = await getConnection();
         const result = await pool.request()

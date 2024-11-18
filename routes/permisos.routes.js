@@ -6,6 +6,7 @@ const router = express.Router();
 // Ruta para obtener permisos de un empleado específico
 router.get('/permisos/id/:cod_emp', async (req, res) => {
   const { cod_emp } = req.params;
+  console.log('Request GET received for /permisos/id/:cod_emp');
   try {
     const pool = await getConnection();
     const result = await pool.request()
@@ -19,10 +20,10 @@ router.get('/permisos/id/:cod_emp', async (req, res) => {
 });
 
 
-
+// Ruta para obtener permisos de un empleado específico
 router.get('/permisos/supervisor/:cod_supervisor', async (req, res) => {
   const { cod_supervisor } = req.params;
-
+  console.log('Request GET received for /permisos/supervisor/:cod_supervisor');
   try {
     const pool = await getConnection();
     const result = await pool.request()
@@ -58,6 +59,7 @@ router.get('/permisos/supervisor/:cod_supervisor', async (req, res) => {
 // Ruta para crear un nuevo permiso
 router.post('/permisos', async (req, res) => {
   const { cod_emp, Fecha_inicio, Fecha_Fin, Titulo, Motivo, descripcion } = req.body;
+  console.log('Request POST received for /permisos');
   try {
     const pool = await getConnection();
     await pool.request()
@@ -80,6 +82,7 @@ router.post('/permisos', async (req, res) => {
 
 router.get('/permisos/notificacion/Supervisor/:cod_supervisor', async (req, res) => {
   const { cod_supervisor } = req.params;
+  console.log('Request GET received for /permisos/notificacion/Supervisor/:cod_supervisor');
   try {
     const pool = await getConnection();
     const result = await pool.request()
@@ -129,7 +132,7 @@ router.get('/permisos/notificacion/Supervisor/:cod_supervisor', async (req, res)
 // Ruta para obtener permisos pendientes de un supervisor específico y todos los permisos aprobados de todos los empleados
 router.get('/permisos/nuevos/:cod_supervisor', async (req, res) => {
   const { cod_supervisor } = req.params
-
+  console.log('Request GET received for /permisos/nuevos/:cod_supervisor');
   try {
     const pool = await getConnection();
     const result = await pool.request()
@@ -182,64 +185,82 @@ router.get('/permisos/nuevos/:cod_supervisor', async (req, res) => {
 
 
 // Ruta para aprobar un permiso
-router.put('/permisos/:PermisosID/process', async (req, res) => {
-  const { PermisosID } = req.params;
-  const { cod_RRHH } = req.body;
-
-  try {
-    const pool = await getConnection();
-    const result = await pool.request()
-      .input('PermisosID', sql.Int, PermisosID)
-      .query('SELECT Estado FROM db_accessadmin.PERMISOS WHERE PermisosID = @PermisosID');
-
-    const estado = result.recordset[0]?.Estado;
-
-    if (estado === 'Aprobada') {
-      return res.status(400).json({ message: 'Las vacaciones ya han sido aprobadas anteriormente.' });
-    }
-      console.log("Pasó por aquí ", PermisosID," ", cod_RRHH);
-    await pool.request()
-            .input('PermisosID', sql.Int, PermisosID)
-      .input('cod_RRHH', sql.Char, cod_RRHH)
-      .execute('sp_UpdatePermisos');
-
-    res.json({ message: 'Vacaciones procesadas exitosamente' });
-  } catch (error) {
-    console.error('Error aprobando vacaciones:', error);
-    res.status(500).json({ error: 'Error aprobando vacaciones' });
-  }
-});
-
-// Ruta para aprobar un permiso
 router.put('/permisos/:PermisosID/approve', async (req, res) => {
   const { PermisosID } = req.params;
   const { cod_supervisor } = req.body;
 
+  console.log('Request PUT received for /permisos/:PermisosID/approve');
   try {
     const pool = await getConnection();
-    const result = await pool.request()
+    const transaction = new sql.Transaction(pool);
+
+    await transaction.begin(sql.ISOLATION_LEVEL.SERIALIZABLE);
+
+    const result = await transaction.request()
       .input('PermisosID', sql.Int, PermisosID)
-      .query('SELECT Estado FROM db_accessadmin.PERMISOS WHERE PermisosID = @PermisosID');
+      .query('SELECT Estado FROM [db_accessadmin].[PERMISOS] WHERE PermisosID = @PermisosID');
 
-    const estado = result.recordset[0]?.Estado;
-
-    if (estado === 'Procesada') {
-      return res.status(400).json({ message: 'El permiso ya ha sido procesado anteriormente.' });
+    if (result.recordset.length === 0) {
+      await transaction.rollback();
+      return res.status(404).send('Permiso no encontrado');
     }
 
-    await pool.request()
+    const permiso = result.recordset[0];
+    if (permiso.Estado !== 'Pendiente') {
+      await transaction.rollback();
+      return res.status(400).send(`El permiso ya ha sido ${permiso.Estado.toLowerCase()}`);
+    }
+
+    await transaction.request()
       .input('PermisosID', sql.Int, PermisosID)
       .input('cod_supervisor', sql.Char, cod_supervisor)
-      .query(`
-        UPDATE [db_accessadmin].[PERMISOS]
-        SET Estado = 'Aprobada', cod_supervisor = @cod_supervisor
-        WHERE PermisosID = @PermisosID
-      `);
+      .query('UPDATE [db_accessadmin].[PERMISOS] SET Estado = \'Aprobada\', cod_supervisor = @cod_supervisor WHERE PermisosID = @PermisosID');
 
-    res.json({ message: 'Permiso procesado exitosamente' });
+    await transaction.commit();
+    res.send('Permiso aprobado exitosamente');
   } catch (error) {
-    console.error('Error procesando permiso:', error);
-    res.status(500).json({ error: 'Error procesando permiso' });
+    console.error('Error al aprobar permiso:', error);
+    res.status(500).send('Error al aprobar permiso');
+  }
+});
+
+// Ruta para procesar un permiso
+router.put('/permisos/:PermisosID/process', async (req, res) => {
+  const { PermisosID } = req.params;
+  const { cod_RRHH } = req.body;
+
+  console.log('Request PUT received for /permisos/:PermisosID/process');
+  try {
+    const pool = await getConnection();
+    const transaction = new sql.Transaction(pool);
+
+    await transaction.begin(sql.ISOLATION_LEVEL.SERIALIZABLE);
+
+    const result = await transaction.request()
+      .input('PermisosID', sql.Int, PermisosID)
+      .query('SELECT Estado FROM [db_accessadmin].[PERMISOS] WHERE PermisosID = @PermisosID');
+
+    if (result.recordset.length === 0) {
+      await transaction.rollback();
+      return res.status(404).send('Permiso no encontrado');
+    }
+
+    const permiso = result.recordset[0];
+    if (permiso.Estado !== 'Aprobada') {
+      await transaction.rollback();
+      return res.status(400).send(`El permiso ya ha sido ${permiso.Estado.toLowerCase()}`);
+    }
+
+    await transaction.request()
+      .input('PermisosID', sql.Int, PermisosID)
+      .input('cod_RRHH', sql.Char, cod_RRHH)
+      .query('UPDATE [db_accessadmin].[PERMISOS] SET Estado = \'Procesada\', cod_RRHH = @cod_RRHH WHERE PermisosID = @PermisosID');
+
+    await transaction.commit();
+    res.send('Permiso procesado exitosamente');
+  } catch (error) {
+    console.error('Error al procesar permiso:', error);
+    res.status(500).send('Error al procesar permiso');
   }
 });
 
@@ -247,16 +268,35 @@ router.put('/permisos/:PermisosID/approve', async (req, res) => {
 router.put('/permisos/:PermisosID/reject', async (req, res) => {
   const { PermisosID } = req.params;
   const { cod_supervisor } = req.body;
+
+  console.log('Request PUT received for /permisos/:PermisosID/reject');
   try {
     const pool = await getConnection();
-    await pool.request()
+    const transaction = new sql.Transaction(pool);
+
+    await transaction.begin(sql.ISOLATION_LEVEL.SERIALIZABLE);
+
+    const result = await transaction.request()
+      .input('PermisosID', sql.Int, PermisosID)
+      .query('SELECT Estado FROM [db_accessadmin].[PERMISOS] WHERE PermisosID = @PermisosID');
+
+    if (result.recordset.length === 0) {
+      await transaction.rollback();
+      return res.status(404).send('Permiso no encontrado');
+    }
+
+    const permiso = result.recordset[0];
+    if (permiso.Estado !== 'Pendiente') {
+      await transaction.rollback();
+      return res.status(400).send(`El permiso ya ha sido ${permiso.Estado.toLowerCase()}`);
+    }
+
+    await transaction.request()
       .input('PermisosID', sql.Int, PermisosID)
       .input('cod_supervisor', sql.Char, cod_supervisor)
-      .query(
-        `UPDATE [db_accessadmin].[PERMISOS]
-         SET Estado = 'Rechazada',cod_supervisor = @cod_supervisor
-         WHERE PermisosID = @PermisosID`
-      );
+      .query('UPDATE [db_accessadmin].[PERMISOS] SET Estado = \'Rechazada\', cod_supervisor = @cod_supervisor WHERE PermisosID = @PermisosID');
+
+    await transaction.commit();
     res.send('Permiso rechazado exitosamente');
   } catch (error) {
     console.error('Error al rechazar permiso:', error);
@@ -266,6 +306,7 @@ router.put('/permisos/:PermisosID/reject', async (req, res) => {
 
 // Nueva ruta para obtener permisos aprobados y procesados
 router.get('/permisos/aprobadosProcesados', async (req, res) => {
+  console.log('Request GET received for /permisos/aprobadosProcesados');
   try {
     const pool = await getConnection();
     const result = await pool.request()

@@ -2,7 +2,7 @@ import express from 'express';
 import multer from 'multer';
 import nodemailer from 'nodemailer';
 import { getConnection, sql } from '../database/connection.js'; 
-import zlib from 'zlib';
+
 
 const router = express.Router();
 const upload = multer();
@@ -15,6 +15,7 @@ router.get('/prestaciones/:cod_emp', async (req, res) => {
         return res.status(400).json({ success: false, message: 'Invalid cod_emp value' });
     }
 
+    console.log(`Request GET received for prestaciones: cod_emp=${cod_emp}`);
     try {
         const pool = await getConnection();
         const result = await pool.request()
@@ -65,6 +66,7 @@ router.post('/send-prestaciones', upload.single('pdf'), async (req, res) => {
     const { cod_emp } = req.body;
     const pdfBuffer = req.file.buffer;
 
+    console.log(`Request received to send prestaciones email: cod_emp=${cod_emp}`);
     try {
         const pool = await getConnection();
         const result = await pool.request()
@@ -80,7 +82,7 @@ router.post('/send-prestaciones', upload.single('pdf'), async (req, res) => {
         }
 
         const { correo_e } = result.recordset[0];
-        console.log(`Correo del empleado: ${correo_e}`);
+       
         // Comprimir el archivo PDF
         //const compressedPdfBuffer = zlib.gzipSync(pdfBuffer);
         const mailOptions = {
@@ -115,6 +117,7 @@ router.post('/send-prestaciones-secundario', upload.single('pdf'), async (req, r
     const { cod_emp, correo_secundario } = req.body;
     const pdfBuffer = req.file.buffer;
 
+    console.log(`Request received to send prestaciones email to secondary email: cod_emp=${cod_emp}, correo_secundario=${correo_secundario}`);
     try {
         const pool = await getConnection();
         const result = await pool.request()
@@ -145,7 +148,7 @@ router.post('/send-prestaciones-secundario', upload.single('pdf'), async (req, r
 
         // Enviar el correo con reintentos
         const resultMail = await sendMailWithRetry(mailOptions);
-        console.log(correo_secundario);
+        
         if (resultMail.success) {
             res.json({ success: true, message: 'Correo enviado', info: resultMail.info });
         } else {

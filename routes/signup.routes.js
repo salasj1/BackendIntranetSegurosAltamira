@@ -5,10 +5,11 @@ import { getConnection, sql } from '../database/connection.js';
 const router = express.Router();
 
 router.post('/signup', async (req, res) => {
+
     const { email, username, password, confirmPassword } = req.body;
-    console.log('Datos recibidos:', req.body); // Agrega esto para ver los datos recibidos
+    console.log("Entrando a signup");
     if (!email || !username || !password || !confirmPassword) {
-      console.log('Faltan datos'); // Agrega esto para ver si faltan datos
+      
       return res.status(400).json({ success: false, message: 'Todos los campos son obligatorios' });
     }
     if (password !== confirmPassword) {
@@ -16,6 +17,7 @@ router.post('/signup', async (req, res) => {
     }
 
     try {
+        console.log("Request POST received for /signup");
         const pool = await getConnection();
             
         // Verificar si el usuario ya existe

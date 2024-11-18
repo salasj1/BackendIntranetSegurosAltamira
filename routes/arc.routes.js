@@ -6,15 +6,18 @@ import { getConnection, sql } from '../database/connection.js';
 const router = express.Router();
 const upload = multer();
 
+// Ruta para obtener datos del ARC de un empleado específico
 router.get('/arc/:cod_emp', async (req, res) => {
     let { cod_emp } = req.params;
     const { fecha } = req.query;
-  
+
+    console.log(`Request received for ARC data: cod_emp=${cod_emp}, fecha=${fecha}`);
+
     // Validar que cod_emp y fecha sean números
     if (isNaN(cod_emp) || isNaN(fecha)) {
       return res.status(400).json({ success: false, message: 'Invalid cod_emp or fecha value' });
     }
-  
+
     try {
       const pool = await getConnection();
       const result = await pool.request()
@@ -26,8 +29,9 @@ router.get('/arc/:cod_emp', async (req, res) => {
       console.error('Error fetching ARC data:', error);
       res.status(500).json({ success: false, message: 'Failed to fetch data', error });
     }
-  });
+});
 
+// Configuración del transportador de nodemailer
 const transporter = nodemailer.createTransport({
     host: '192.168.0.206',
     port: 25,
@@ -39,6 +43,7 @@ const transporter = nodemailer.createTransport({
     debug: true
 });
 
+// Función para enviar correo con reintentos
 const sendMailWithRetry = async (mailOptions, retries = 3) => {
     for (let attempt = 1; attempt <= retries; attempt++) {
         try {
@@ -53,9 +58,12 @@ const sendMailWithRetry = async (mailOptions, retries = 3) => {
     }
 };
 
+// Ruta para enviar el ARC por correo electrónico al correo principal del empleado
 router.post('/send-arc', upload.single('pdf'), async (req, res) => {
     const { cod_emp, fecha } = req.body;
     const pdfBuffer = req.file.buffer;
+
+    console.log(`Request received to send ARC email: cod_emp=${cod_emp}, fecha=${fecha}`);
 
     try {
         const pool = await getConnection();
@@ -99,9 +107,12 @@ router.post('/send-arc', upload.single('pdf'), async (req, res) => {
     }
 });
 
+// Ruta para enviar el ARC por correo electrónico a un correo secundario
 router.post('/send-arc-secundario', upload.single('pdf'), async (req, res) => {
     const { cod_emp, correo_secundario, fecha } = req.body;
     const pdfBuffer = req.file.buffer;
+
+    console.log(`Request received to send ARC email to secondary email: cod_emp=${cod_emp}, correo_secundario=${correo_secundario}, fecha=${fecha}`);
 
     try {
         const mailOptions = {
