@@ -89,41 +89,7 @@ router.post('/vacaciones', async (req, res) => {
   }
 });
 
-// Se obtienen las vacaciones aprobadas
-router.get('/vacacionesAprobadas', async (req, res) => {
-  const { cod_emp, FechaInicio, FechaFin, Estado } = req.body;
 
-  console.log('Request GET received for /vacacionesAprobadas');
-
-  try {
-    const pool = await getConnection();
-    await pool.request()
-      .input('cod_emp', sql.Char, cod_emp)
-      .input('FechaInicio', sql.Date, FechaInicio)
-      .input('FechaFin', sql.Date, FechaFin)
-      .input('Estado', sql.VarChar, Estado)
-      .query(`
-        SELECT 
-          V.VacacionID,
-          V.FechaInicio,
-          V.FechaFin,
-          V.Estado,
-          V.cod_emp,
-          E.nombre_completo,
-          E.nombres,
-          E.apellidos,
-          E.nombre_completo,
-          V.cod_supervisor
-        FROM db_accessadmin.VACACIONES V
-        JOIN dbo.VSNEMPLE E ON V.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS = E.cod_emp
-        where V.Estado IN ('aprobada')
-      `);
-    res.status(201).json({ message: 'Vacaciones registradas exitosamente' });
-  } catch (error) {
-    console.error('Error registrando vacaciones:', error);
-    res.status(500).json({ error: 'Error registrando vacaciones' });
-  }
-});
 
 // Se obtienen las vacaciones aprobadas para el supervisor para su aprobación
 router.get('/vacaciones/supervisor/:cod_supervisor', async (req, res) => {
@@ -145,7 +111,9 @@ router.get('/vacaciones/supervisor/:cod_supervisor', async (req, res) => {
           E.nombres,
           E.apellidos,
           E.nombre_completo,
-          E.ci
+          E.ci,
+          E.des_depart AS departamento,
+          E.des_cargo AS cargo
         FROM db_accessadmin.VACACIONES V
         JOIN dbo.VSNEMPLE E ON V.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS = E.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS
         JOIN db_accessadmin.SUPERVISION S ON V.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS = S.Cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS

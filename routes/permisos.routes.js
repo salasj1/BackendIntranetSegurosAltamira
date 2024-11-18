@@ -42,12 +42,14 @@ router.get('/permisos/supervisor/:cod_supervisor', async (req, res) => {
           P.cod_RRHH,
           E.ci,
           E.nombres,
-          E.apellidos
-        FROM db_accessadmin.PERMISOS P
-        JOIN dbo.VSNEMPLE E ON P.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS = E.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS
-        JOIN db_accessadmin.SUPERVISION S ON P.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS = S.Cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS
-        WHERE S.Cod_supervisor COLLATE SQL_Latin1_General_CP1_CI_AS = @cod_supervisor
-        AND P.Estado IN ('Aprobada', 'Pendiente','Rechazada','Procesada') AND S.Tipo=2
+          E.apellidos,
+          E.des_depart AS departamento,
+          E.des_cargo AS cargo
+          FROM db_accessadmin.PERMISOS P
+          JOIN dbo.VSNEMPLE E ON P.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS = E.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS
+          JOIN db_accessadmin.SUPERVISION S ON P.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS = S.Cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS
+          WHERE S.Cod_supervisor COLLATE SQL_Latin1_General_CP1_CI_AS = '000003'
+          AND P.Estado IN ('Aprobada', 'Pendiente','Rechazada','Procesada') AND S.Tipo=2
       `);
     res.json(result.recordset);
   } catch (error) {
@@ -265,11 +267,11 @@ router.put('/permisos/:PermisosID/process', async (req, res) => {
 });
 
 // Ruta para rechazar un permiso
-router.put('/permisos/:PermisosID/reject', async (req, res) => {
+router.put('/permisos/:PermisosID/reject1', async (req, res) => {
   const { PermisosID } = req.params;
   const { cod_supervisor } = req.body;
 
-  console.log('Request PUT received for /permisos/:PermisosID/reject');
+  console.log('Request PUT received for /permisos/:PermisosID/reject1');
   try {
     const pool = await getConnection();
     const transaction = new sql.Transaction(pool);
@@ -287,6 +289,46 @@ router.put('/permisos/:PermisosID/reject', async (req, res) => {
 
     const permiso = result.recordset[0];
     if (permiso.Estado !== 'Pendiente') {
+      await transaction.rollback();
+      return res.status(400).send(`El permiso ya ha sido ${permiso.Estado.toLowerCase()}`);
+    }
+
+    await transaction.request()
+      .input('PermisosID', sql.Int, PermisosID)
+      .input('cod_supervisor', sql.Char, cod_supervisor)
+      .query('UPDATE [db_accessadmin].[PERMISOS] SET Estado = \'Rechazada\', cod_supervisor = @cod_supervisor WHERE PermisosID = @PermisosID');
+
+    await transaction.commit();
+    res.send('Permiso rechazado exitosamente');
+  } catch (error) {
+    console.error('Error al rechazar permiso:', error);
+    res.status(500).send('Error al rechazar permiso');
+  }
+});
+
+// Ruta para rechazar un permiso
+router.put('/permisos/:PermisosID/reject2', async (req, res) => {
+  const { PermisosID } = req.params;
+  const { cod_supervisor } = req.body;
+
+  console.log('Request PUT received for /permisos/:PermisosID/reject2');
+  try {
+    const pool = await getConnection();
+    const transaction = new sql.Transaction(pool);
+
+    await transaction.begin(sql.ISOLATION_LEVEL.SERIALIZABLE);
+
+    const result = await transaction.request()
+      .input('PermisosID', sql.Int, PermisosID)
+      .query('SELECT Estado FROM [db_accessadmin].[PERMISOS] WHERE PermisosID = @PermisosID');
+
+    if (result.recordset.length === 0) {
+      await transaction.rollback();
+      return res.status(404).send('Permiso no encontrado');
+    }
+
+    const permiso = result.recordset[0];
+    if (permiso.Estado !== 'Aprobada') {
       await transaction.rollback();
       return res.status(400).send(`El permiso ya ha sido ${permiso.Estado.toLowerCase()}`);
     }
@@ -325,10 +367,12 @@ router.get('/permisos/aprobadosProcesados', async (req, res) => {
           E.nombre_completo,
           E.nombres,
           E.apellidos,
-          E.ci
+          E.ci,
+          E.des_depart AS departamento,
+          E.des_cargo AS cargo
         FROM db_accessadmin.PERMISOS P
         JOIN dbo.VSNEMPLE E ON P.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS = E.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS
-        WHERE P.Estado IN ('Aprobada', 'Procesada')
+        WHERE P.Estado IN ('Aprobada', 'Procesada','Rechazada')
       `);
     res.json(result.recordset);
   } catch (error) {
