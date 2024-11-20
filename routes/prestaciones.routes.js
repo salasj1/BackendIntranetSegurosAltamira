@@ -9,17 +9,16 @@ const upload = multer();
 
 router.get('/prestaciones/:cod_emp', async (req, res) => {
     let { cod_emp } = req.params;
-    cod_emp = cod_emp.trim().replace(/\D/g, '');
-
-    if (isNaN(cod_emp)) {
-        return res.status(400).json({ success: false, message: 'Invalid cod_emp value' });
+    console.log("CODIGO EMPLEADO: " + cod_emp);
+    
+    if (cod_emp === 'undefined') {
+        cod_emp = '0';
     }
-
     console.log(`Request GET received for prestaciones: cod_emp=${cod_emp}`);
     try {
         const pool = await getConnection();
         const result = await pool.request()
-            .input('cod_emp', sql.VarChar, cod_emp) // Cambiar a VarChar
+            .input('cod_emp', sql.VarChar, cod_emp) 
             .query(`
                 SELECT *
                 FROM [INTRANET_SEGALTA].[dbo].[VSAPrestacionesIntereses]

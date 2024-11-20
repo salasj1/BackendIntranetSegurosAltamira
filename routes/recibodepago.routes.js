@@ -15,7 +15,7 @@ router.get('/recibos/:cod_emp', async (req, res) => {
         
         const pool = await getConnection();
         const result = await pool.request()
-            .input('cod_emp', sql.Char, cod_emp)
+            .input('cod_emp', sql.VarChar, cod_emp)
             .query(`
             SELECT *
             FROM [INTRANET_SEGALTA].[dbo].[VRECIBOS_LISTA]
@@ -49,7 +49,7 @@ router.get('/recibo/:reci_num/:cod_emp', async (req, res) => {
         const pool = await getConnection();
         const result = await pool.request()
             .input('Reci_Num', sql.Int, parseInt(reci_num, 10))
-            .input('cod_emp', sql.Int, parseInt(cod_emp, 10))
+            .input('cod_emp', sql.VarChar, cod_emp)
             .execute('RepReciboPago');
 
         const data = result.recordset;

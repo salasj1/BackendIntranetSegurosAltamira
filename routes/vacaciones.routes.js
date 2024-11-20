@@ -8,8 +8,9 @@ router.get('/vacaciones/id/:cod_emp', async (req, res) => {
   const { cod_emp } = req.params;
 
   console.log('Request GET received for /vacaciones/id/:cod_emp');
-
+  console.log('cod_emp: ', cod_emp);
   try {
+
     const pool = await getConnection();
     pool.requestTimeout = 30000; // Aumenta el tiempo de espera a 30 segundos
     const result = await pool.request()

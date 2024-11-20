@@ -38,7 +38,7 @@ router.get('/empleados/control', async (req, res) => {
       insert #TIPOS_SUP
       EXEC spCargarTipoSupervision
 
-      SELECT DISTINCT
+      SELECT 
       E.cod_emp,
       E.ci as cedula_empleado,
       E.nombres AS nombres_empleado,
@@ -159,9 +159,9 @@ router.post('/empleados/supervision', async (req, res) => {
     const supervisadosXml = `<Supervisados>${supervisados.map(s => `<supervisado>${s}</supervisado>`).join('')}</Supervisados>`;
     console.log("Antes de insertar");
     await pool.request()
-      .input('supervisor', sql.Char(17), supervisor)
+      .input('supervisor', sql.Char, supervisor)
       .input('supervisados', sql.NVarChar, supervisadosXml)
-      .input('tipo', sql.VarChar(50), tipo)
+      .input('tipo', sql.VarChar, tipo)
       .execute('spAgregarSupervision');
       console.log("Despues de insertar");
     res.json({ message: 'Supervisión agregada correctamente' });
@@ -183,7 +183,7 @@ router.get('/empleados/supervision', async (req, res) => {
       .input('cod_emp', sql.VarChar, cod_emp)
       .input('cod_supervisor', sql.VarChar, cod_supervisor)
       .query(`
-        SELECT DISTINCT
+        SELECT 
         S.ID_SUPERVISION,
         A.cod_emp ,
 		    A.des_depart as departamento_empleado,
@@ -211,9 +211,9 @@ router.get('/empleados/supervision', async (req, res) => {
 
 // Ruta para eliminar una supervisión
 router.delete('/empleados/supervision', async (req, res) => {
-  console.log('Request DELETE received for /empleados/supervision');
+  
   const { ID_SUPERVISION } = req.body;
-
+  console.log('Request DELETE received for /empleados/supervision ' + ID_SUPERVISION);
   try {
     const pool = await getConnection();
     await pool.request()

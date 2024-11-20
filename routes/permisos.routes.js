@@ -50,6 +50,7 @@ router.get('/permisos/supervisor/:cod_supervisor', async (req, res) => {
           JOIN db_accessadmin.SUPERVISION S ON P.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS = S.Cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS
           WHERE S.Cod_supervisor COLLATE SQL_Latin1_General_CP1_CI_AS = @cod_supervisor
           AND P.Estado IN ('Aprobada', 'Pendiente','Rechazada','Procesada') AND S.Tipo=2
+          ORDER BY P.Estado ASC
       `);
     res.json(result.recordset);
   } catch (error) {
@@ -122,7 +123,7 @@ router.get('/permisos/notificacion/Supervisor/:cod_supervisor', async (req, res)
             dbo.VSNEMPLE E ON P.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS = E.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS
         WHERE 
             P.cod_emp = @cod_supervisor
-            AND P.Estado IN ('Aprobada','Rechazada');
+            AND P.Estado IN ('Aprobada','Rechazada'); 
       `);
     res.json(result.recordset);
   } catch (error) {
@@ -176,7 +177,7 @@ router.get('/permisos/nuevos/:cod_supervisor', async (req, res) => {
           E.apellidos
         FROM db_accessadmin.PERMISOS P
         JOIN dbo.VSNEMPLE E ON P.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS = E.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS
-        WHERE P.Estado IN ('Aprobada','Rechazada') and P.cod_emp=@cod_supervisor
+        WHERE P.Estado IN ('Aprobada','Rechazada') and P.cod_emp=@cod_supervisor 
       `);
     res.json(result.recordset);
   } catch (error) {

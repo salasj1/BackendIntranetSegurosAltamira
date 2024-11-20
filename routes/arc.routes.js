@@ -13,15 +13,11 @@ router.get('/arc/:cod_emp', async (req, res) => {
 
     console.log(`Request received for ARC data: cod_emp=${cod_emp}, fecha=${fecha}`);
 
-    // Validar que cod_emp y fecha sean números
-    if (isNaN(cod_emp) || isNaN(fecha)) {
-      return res.status(400).json({ success: false, message: 'Invalid cod_emp or fecha value' });
-    }
 
     try {
       const pool = await getConnection();
       const result = await pool.request()
-        .input('sCo_Emp', sql.Char(17), cod_emp)
+        .input('sCo_Emp', sql.Char, cod_emp)
         .input('iAnhio', sql.Int, fecha)
         .execute('spSARepComprobanteRetencionARC');
       res.json(result.recordset);
