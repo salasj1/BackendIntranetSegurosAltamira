@@ -14,14 +14,19 @@ router.post('/login', async (req, res) => {
         const result = await pool.request()
             .input('username', sql.NVarChar, username)
             .query(`
-                SELECT u.*, e.nombre_completo, e.des_cargo, e.fecha_ing, e.des_depart, e.tipo, e.RRHH
+                SELECT u.*, e.nombre_completo, e.des_cargo, e.fecha_ing, e.des_depart, e.tipo, e.RRHH, e.correo_e email
                 FROM snusuarios u
                 JOIN VSNEMPLE e ON u.cod_emp COLLATE Modern_Spanish_CI_AS = e.cod_emp COLLATE Modern_Spanish_CI_AS
                 WHERE u.username = @username COLLATE Modern_Spanish_CI_AS;
-            `);           
+            `);     
+
         if (result.recordset.length > 0) {
             const user = result.recordset[0];
+            console.log('User found:', user);
+            console.log('Password from request:', password);
+            console.log('Password from database:', user.password);
             const passwordMatch = await bcrypt.compare(password, user.password);
+            console.log('Password match:', passwordMatch);
             
             if (passwordMatch) {
                 res.json({ 
@@ -33,13 +38,16 @@ router.post('/login', async (req, res) => {
                     fecha_ing: user.fecha_ing,
                     des_depart: user.des_depart,
                     tipo: user.tipo,
-                    RRHH: user.RRHH
+                    RRHH: user.RRHH,
+                    email: user.email
                 });
             } else {
-                res.status(401).json({ success: false, message: 'Authentication failed' });
+                console.log('Invalid password');
+                res.status(401).json({ success: false, message: 'Contraseña Invalida' });
             }
         } else {
-            res.status(401).json({ success: false, message: 'Authentication failed' });
+            console.log('User not found');
+            res.status(401).json({ success: false, message: 'No se encuentra el usuario' });
         }
     } catch (error) {
         console.error('ERROR: ' + JSON.stringify(error));

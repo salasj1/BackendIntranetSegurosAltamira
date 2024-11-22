@@ -53,7 +53,6 @@ router.get('/recibo/:reci_num/:cod_emp', async (req, res) => {
             .execute('RepReciboPago');
 
         const data = result.recordset;
-        
         res.json(data);
     } catch (error) {
         console.error('ERROR: ' + JSON.stringify(error));
