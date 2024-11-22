@@ -38,7 +38,8 @@ router.post('/login', async (req, res) => {
                     fecha_ing: user.fecha_ing,
                     des_depart: user.des_depart,
                     tipo: user.tipo,
-                    RRHH: user.RRHH
+                    RRHH: user.RRHH,
+                    email: user.email
                 });
             } else {
                 console.log('Invalid password');
