@@ -1,23 +1,24 @@
-export interface Usuario {
-    id: number;
-    username: string;
-    password: string;
-    status : string;
-}
+import { getConnection, sql } from "../database/connection.js";
 
-export async function buscarUsuario(cod_emp: string): Promise<Usuario[]> {
-    const pool = await getConnection();
+async function buscarUsuario(username) {
     try {
-        
+        const pool = await getConnection();
+        if (!pool) {
+            throw new Error('No se pudo establecer la conexión con la base de datos');
+        }
         const result = await pool.request()
-        .input('cod_emp', sql.NVarChar, cod_emp)
-        .execute('spBuscarUsuario');        
-        
+            .input('username', sql.NVarChar, username)
+            .execute('spBuscarUsuario');
 
-
-    }catch{
+        if (result.recordset.length > 0) {
+            return result.recordset[0];
+        } else {
+            return null;
+        }
+    } catch (error) {
         console.error('Error al buscar el usuario:', error);
-        return error;
+        throw error;
     }
-    
 }
+
+export { buscarUsuario };

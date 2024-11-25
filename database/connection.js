@@ -19,6 +19,7 @@ export const getConnection = async () => {
       return pool;
     } catch (error) {
       console.error(error);
+      
     }
   };
   

@@ -8,7 +8,7 @@ import prestacionesRouter from './routes/prestaciones.routes.js';
 import arc from './routes/arc.routes.js';
 import vacacionesRouter from './routes/vacaciones.routes.js'; 
 import permisosRouter from './routes/permisos.routes.js';
-
+import changepassword from './routes/changepassword.routes.js';
 const app = express();
 app.use(express.json()); 
 app.use(express.urlencoded({ extended: true })); 
@@ -16,7 +16,7 @@ app.use(cors({
     origin: '*', // Permitir cualquier origen
     credentials: true
 }));
-
+app.use(changepassword);
 app.use(empleadosRouter);
 app.use(signupRouter);
 app.use(login);

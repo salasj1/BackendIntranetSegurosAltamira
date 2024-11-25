@@ -22,6 +22,10 @@ router.post('/login', async (req, res) => {
 
         if (result.recordset.length > 0) {
             const user = result.recordset[0];
+            if (user.status === 'Nuevo' || user.status === null) {
+                console.log('El usuario es nuevo');
+                res.status(401).json({ success: false, message: 'El usuario ingresado es un usuario nuevo, por favor cambiar su contraseña' });
+            }
             console.log('User found:', user);
             console.log('Password from request:', password);
             console.log('Password from database:', user.password);

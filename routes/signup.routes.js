@@ -57,7 +57,7 @@ router.post('/signup', async (req, res) => {
             .input('username', sql.NVarChar, username)
             .input('password', sql.NVarChar, hashedPassword)
             .input('cod_emp', sql.NVarChar, cod_emp)
-            .query('INSERT INTO snusuarios (username, password, cod_emp) VALUES (@username, @password, @cod_emp)');
+            .query('INSERT INTO snusuarios (username, password, cod_emp, status) VALUES (@username, @password, @cod_emp), "Nuevo"');
 
         // Generar un token (puedes usar cualquier método para generar el token)
         const token = 'generated-jwt-token';
