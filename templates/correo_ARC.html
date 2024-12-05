@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+                <html>
+                <head>
+                    <style>
+                        .email-container {
+                            font-family: Arial, sans-serif;
+                            background: linear-gradient(to right, rgb(14,70,150), rgb(12,68,142));
+                            padding: 20px;
+                        }
+                        .email-content {
+                            background-color: #ffffff;
+                            padding: 20px;
+                            border-radius: 10px;
+                            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+                            padding-bottom: 0px;
+                        }
+                        .email-header {
+                            font-size: 24px;
+                            font-weight: bold;
+                            color: #333333;
+                            margin-bottom: 20px;
+                        }
+                        .email-body {
+                            font-size: 16px;
+                            color: #555555;
+                            line-height: 1.5;
+                        }
+                        .email-footer {
+                            margin-top: 20px;
+                            font-size: 14px;
+                            color: #777777;
+                        }
+                        .email-image-footer  {
+                            
+                            display: block;
+                            width: calc(100%);           
+                            
+                            font-size: 14px;
+                            color: #777777;
+                            border-radius: 0 0 10px 10px;
+                        }
+                        
+                    </style>
+                </head>
+                <body>
+                    <div class="email-container">
+                        <div class="email-content">
+                            <div class="email-header">Comprobante de Agente de Retención (ARC)</div>
+                            <div class="email-body">
+                                <!-- <p>${cuerpo}</p> -->
+                                <p>Estimado(a) ${nombre_empleado},</p>
+                                <p>En el presente se le anexa su Comprobante de Agente de Retención (ARC) correspondiente al año ${fecha}. Quedamos a sus órdenes.</p>
+                            </div>
+                            <div class="email-footer">
+                                <p>Intranet de Seguros Altamira</p>
+                                
+                            </div>
+                            <img src="https://media.licdn.com/dms/image/v2/D4E3DAQF0mlb0e_m8-Q/image-scale_191_1128/image-scale_191_1128/0/1678969137498/seguros_altamira_cover?e=2147483647&v=beta&t=oOSJm4jhoR01nmRztPezxIuPIdnn2WWJ8kt4j3tUYuE"class="email-image-footer" alt="Seguros Altamira" >
+                        </div>
+                    </div>
+                </body>
+                </html>

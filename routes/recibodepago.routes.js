@@ -2,9 +2,17 @@ import express from 'express';
 import { getConnection, sql } from '../database/connection.js';
 import nodemailer from 'nodemailer';
 import multer from 'multer'; 
-import zlib from 'zlib';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import fs from 'fs';
+
 const router = express.Router();
 const upload = multer(); // Middleware para manejar archivos
+
+
+// Obtener el directorio actual utilizando import.meta.url
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 //Se obtienen la lista de recibos de pago de un empleado
 router.get('/recibos/:cod_emp', async (req, res) => {
@@ -19,7 +27,22 @@ router.get('/recibos/:cod_emp', async (req, res) => {
             .query(`
             SELECT *
             FROM [INTRANET_SEGALTA].[dbo].[VRECIBOS_LISTA]
-            WHERE cod_emp = @cod_emp;
+            WHERE cod_emp = @cod_emp
+            ORDER BY AÑIO DESC, 
+                 CASE 
+                 WHEN Mes = 'Enero' THEN 1
+                 WHEN Mes = 'Febrero' THEN 2
+                 WHEN Mes = 'Marzo' THEN 3
+                 WHEN Mes = 'Abril' THEN 4
+                 WHEN Mes = 'Mayo' THEN 5
+                 WHEN Mes = 'Junio' THEN 6
+                 WHEN Mes = 'Julio' THEN 7
+                 WHEN Mes = 'Agosto' THEN 8
+                 WHEN Mes = 'Septiembre' THEN 9
+                 WHEN Mes = 'Octubre' THEN 10
+                 WHEN Mes = 'Noviembre' THEN 11
+                 WHEN Mes = 'Diciembre' THEN 12
+                 END DESC;
             `);
                 // [reci_num], [cod_emp], [AÑIO], [Mes], [Contrato]
 
@@ -70,8 +93,8 @@ const transporter = nodemailer.createTransport({
     tls: {
         rejectUnauthorized: false
     },
-    logger: true,
-    debug: true
+    logger: false,
+    debug: false
 });
 
 // Función para enviar correo con reintentos
@@ -113,10 +136,10 @@ router.post('/send-recibo', upload.single('pdf'), async (req, res) => {
 
         // Configuración del correo
         const mailOptions = {
-            from: 'IntranetSegurosAltamira@proseguros.com.ve',
+            from: 'IntranetSegurosAltamira@segurosaltamira.com',
             to: correo_e ,
             subject: `RECIBO DE PAGO ${reci_num}`,
-            text: `Estimado,\nAdjunto encontrarás el PDF del recibo Nº${reci_num} del empleado con código ${cod_emp}.\nSaludos.`,
+            text: `Estimado(a),\nAdjunto encontrarás el PDF del recibo Nº${reci_num} del empleado con código ${cod_emp}.\nSaludos.`,
             attachments: [
                 {
                     filename: `Recibo_de_Pago_${reci_num}.pdf`,
@@ -142,7 +165,7 @@ router.post('/send-recibo', upload.single('pdf'), async (req, res) => {
 
 // Ruta para enviar el recibo de pago a un correo secundario
 router.post('/send-recibo-secundario', upload.single('pdf'), async (req, res) => {
-    const { reci_num, cod_emp, correo_secundario } = req.body;
+    const { reci_num, cod_emp, correo_secundario, fecha } = req.body;
     const pdfBuffer = req.file.buffer;
 
     console.log(`Request POST received to send recibo to secondary email: reci_num=${reci_num}, cod_emp=${cod_emp}, correo_secundario=${correo_secundario}`);
@@ -151,7 +174,7 @@ router.post('/send-recibo-secundario', upload.single('pdf'), async (req, res) =>
         const result = await pool.request()
             .input('cod_emp', sql.NVarChar, cod_emp)
             .query(`
-                SELECT correo_e
+                SELECT nombre_completo
                 FROM VSNEMPLE
                 WHERE cod_emp = @cod_emp;
             `);
@@ -160,18 +183,34 @@ router.post('/send-recibo-secundario', upload.single('pdf'), async (req, res) =>
             return res.status(404).json({ success: false, message: 'Empleado no encontrado' });
         }
 
-        // Configuración del correo
+        let nombre_empleado = result.recordset[0].nombre_completo.replace(/,/g, '');
+
+        const cuerpo = await pool.request()
+            .input('reci_num', sql.Int, reci_num)
+            .input('cod_emp', sql.Char, cod_emp)
+            .query('SELECT [dbo].[ftSACuerpoCorreoRecibo] (@reci_num, @cod_emp) AS cuerpo');
+        
+        cuerpo = cuerpo.recordset[0].cuerpo;
+        
+        // Leer el archivo correo_recibo.html
+        const templatePath = path.join(__dirname, "../templates/correo_Recibo.html");
+        let htmlContent = fs.readFileSync(templatePath, 'utf8');
+
+        // Reemplazar los placeholders en el contenido HTML
+        htmlContent = htmlContent.replace('${nombre_empleado}', nombre_empleado);
+        htmlContent = htmlContent.replace('${cuerpo}',cuerpo);
+
         const mailOptions = {
-            from: 'IntranetSegurosAltamira@proseguros.com.ve',
+            from: 'IntranetSegurosAltamira@segurosaltamira.com',
             to: correo_secundario,
-            subject: `RECIBO DE PAGO ${reci_num}`,
-            text: `Estimado,\n\nAdjunto encontrarás el PDF del recibo Nº${reci_num} del empleado con código ${cod_emp}.\n\nSaludos.`,
+            subject: `Adjunto de Recibo de Nomina ${fecha} ${nombre_empleado}`,
+            html: htmlContent,
             attachments: [
-            {
-                filename: `Recibo_de_Pago_${reci_num}.pdf`,
-                content: pdfBuffer,
-                contentType: 'application/pdf'
-            }
+                {
+                    filename: `Recibo_de_Pago_${reci_num}.pdf`,
+                    content: pdfBuffer,
+                    contentType: 'application/pdf'
+                }
             ]
         };
 
