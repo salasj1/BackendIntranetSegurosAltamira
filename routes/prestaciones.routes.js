@@ -2,14 +2,20 @@ import express from 'express';
 import multer from 'multer';
 import nodemailer from 'nodemailer';
 import { getConnection, sql } from '../database/connection.js'; 
-
+import path from 'path';
+import { fileURLToPath } from 'url';
+import fs from 'fs';
 
 const router = express.Router();
 const upload = multer();
 
+// Obtener el directorio actual utilizando import.meta.url
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 router.get('/prestaciones/:cod_emp', async (req, res) => {
     let { cod_emp } = req.params;
-    console.log("CODIGO EMPLEADO: " + cod_emp);
+
     
     if (cod_emp === 'undefined') {
         cod_emp = '0';
@@ -85,7 +91,7 @@ router.post('/send-prestaciones', upload.single('pdf'), async (req, res) => {
         // Comprimir el archivo PDF
         //const compressedPdfBuffer = zlib.gzipSync(pdfBuffer);
         const mailOptions = {
-            from: 'IntranetSegurosAltamira@proseguros.com.ve',
+            from: 'IntranetSegurosAltamira@segurosaltamira.com',
             to:  correo_e, 
             subject: 'Movimientos de Prestaciones Sociales',
             text: `Adjunto encontrarás el PDF con los movimientos de prestaciones sociales del empleado con código ${cod_emp}.`,
@@ -115,14 +121,16 @@ router.post('/send-prestaciones', upload.single('pdf'), async (req, res) => {
 router.post('/send-prestaciones-secundario', upload.single('pdf'), async (req, res) => {
     const { cod_emp, correo_secundario } = req.body;
     const pdfBuffer = req.file.buffer;
-
+    if (!cod_emp){
+        return res.status(400).json({ success: false, message: 'Código de empleado no proporcionado' });
+    }
     console.log(`Request received to send prestaciones email to secondary email: cod_emp=${cod_emp}, correo_secundario=${correo_secundario}`);
     try {
         const pool = await getConnection();
         const result = await pool.request()
             .input('cod_emp', sql.NVarChar, cod_emp)
             .query(`
-                SELECT correo_e
+                SELECT nombre_completo
                 FROM VSNEMPLE
                 WHERE cod_emp = @cod_emp;
             `);
@@ -130,12 +138,29 @@ router.post('/send-prestaciones-secundario', upload.single('pdf'), async (req, r
         if (result.recordset.length === 0) {
             return res.status(404).json({ success: false, message: 'Empleado no encontrado' });
         }
+        let nombre_empleado = result.recordset[0].nombre_completo.replace(/,/g, '');
+        
+        /* const cuerpo = await pool.request()
+            .input('reci_num', sql.Int, reci_num)
+            .input('cod_emp', sql.Char, cod_emp)
+            .query('SELECT [dbo].[ftSACuerpoARC] (@reci_num, @cod_emp) AS cuerpo');
+        
+        cuerpo = cuerpo.recordset[0].cuerpo; */
 
+        // Leer el archivo correo_ARC.html
+        const templatePath = path.join(__dirname, "../templates/correo_Prestaciones.html");
+        let htmlContent = fs.readFileSync(templatePath, 'utf8');
+
+        // Reemplazar los placeholders en el contenido HTML
+        htmlContent = htmlContent.replace('${nombre_empleado}', nombre_empleado);
+/*         htmlContent = htmlContent.replace('${cuerpo}',cuerpo);
+ */
         const mailOptions = {
-            from: 'IntranetSegurosAltamira@proseguros.com.ve',
+            from: 'IntranetSegurosAltamira@segurosaltamira.com',
             to: correo_secundario,
-            subject: 'Movimientos de Prestaciones Sociales',
-            text: `Adjunto encontrarás el PDF con los movimientos de prestaciones sociales del empleado con código ${cod_emp}.`,
+            subject: `Adjunto de Movimientos de Prestaciones Sociales ${nombre_empleado}`,
+            text: `Estimado(a) ${nombre_empleado},\n\nEn el presente se le anexa su movimiento de prestaciones sociales. Quedamos a sus ordenes.\n\nDepartamento de Nómina.`,
+            html: htmlContent,
             attachments: [
                 {
                     filename: 'prestaciones.pdf',

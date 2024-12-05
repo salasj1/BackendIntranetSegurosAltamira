@@ -195,32 +195,21 @@ router.put('/permisos/:PermisosID/approve', async (req, res) => {
   console.log('Request PUT received for /permisos/:PermisosID/approve');
   try {
     const pool = await getConnection();
-    const transaction = new sql.Transaction(pool);
-
-    await transaction.begin(sql.ISOLATION_LEVEL.SERIALIZABLE);
-
-    const result = await transaction.request()
-      .input('PermisosID', sql.Int, PermisosID)
-      .query('SELECT Estado FROM [db_accessadmin].[PERMISOS] WHERE PermisosID = @PermisosID');
-
-    if (result.recordset.length === 0) {
-      await transaction.rollback();
-      return res.status(404).send('Permiso no encontrado');
-    }
-
-    const permiso = result.recordset[0];
-    if (permiso.Estado !== 'Pendiente') {
-      await transaction.rollback();
-      return res.status(400).send(`El permiso ya ha sido ${permiso.Estado.toLowerCase()}`);
-    }
-
-    await transaction.request()
+    const result = await pool.request()
       .input('PermisosID', sql.Int, PermisosID)
       .input('cod_supervisor', sql.Char, cod_supervisor)
-      .query('UPDATE [db_accessadmin].[PERMISOS] SET Estado = \'Aprobada\', cod_supervisor = @cod_supervisor WHERE PermisosID = @PermisosID');
+      .output('STATUS', sql.Int)
+      .output('RESULTADO', sql.VarChar(2500))
+      .execute('sp_AprobarPermiso');
 
-    await transaction.commit();
-    res.send('Permiso aprobado exitosamente');
+    const status = result.output.STATUS;
+    const resultado = result.output.RESULTADO;
+
+    if (status === 1) {
+      res.send(resultado);
+    } else {
+      res.status(400).send(resultado);
+    }
   } catch (error) {
     console.error('Error al aprobar permiso:', error);
     res.status(500).send('Error al aprobar permiso');
@@ -275,32 +264,21 @@ router.put('/permisos/:PermisosID/reject1', async (req, res) => {
   console.log('Request PUT received for /permisos/:PermisosID/reject1');
   try {
     const pool = await getConnection();
-    const transaction = new sql.Transaction(pool);
-
-    await transaction.begin(sql.ISOLATION_LEVEL.SERIALIZABLE);
-
-    const result = await transaction.request()
-      .input('PermisosID', sql.Int, PermisosID)
-      .query('SELECT Estado FROM [db_accessadmin].[PERMISOS] WHERE PermisosID = @PermisosID');
-
-    if (result.recordset.length === 0) {
-      await transaction.rollback();
-      return res.status(404).send('Permiso no encontrado');
-    }
-
-    const permiso = result.recordset[0];
-    if (permiso.Estado !== 'Pendiente') {
-      await transaction.rollback();
-      return res.status(400).send(`El permiso ya ha sido ${permiso.Estado.toLowerCase()}`);
-    }
-
-    await transaction.request()
+    const result = await pool.request()
       .input('PermisosID', sql.Int, PermisosID)
       .input('cod_supervisor', sql.Char, cod_supervisor)
-      .query('UPDATE [db_accessadmin].[PERMISOS] SET Estado = \'Rechazada\', cod_supervisor = @cod_supervisor WHERE PermisosID = @PermisosID');
+      .output('STATUS', sql.Int)
+      .output('RESULTADO', sql.VarChar(2500))
+      .execute('sp_RechazarPermisoPendiente');
 
-    await transaction.commit();
-    res.send('Permiso rechazado exitosamente');
+    const status = result.output.STATUS;
+    const resultado = result.output.RESULTADO;
+
+    if (status === 1) {
+      res.send(resultado);
+    } else {
+      res.status(400).send(resultado);
+    }
   } catch (error) {
     console.error('Error al rechazar permiso:', error);
     res.status(500).send('Error al rechazar permiso');

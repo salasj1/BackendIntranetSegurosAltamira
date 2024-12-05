@@ -12,7 +12,7 @@ router.get('/vacaciones/id/:cod_emp', async (req, res) => {
   try {
 
     const pool = await getConnection();
-    pool.requestTimeout = 30000; // Aumenta el tiempo de espera a 30 segundos
+    pool.requestTimeout = 30000;
     const result = await pool.request()
       .input('cod_emp', sql.Char, cod_emp)
       .query(`
@@ -23,6 +23,7 @@ router.get('/vacaciones/id/:cod_emp', async (req, res) => {
           Estado
         FROM db_accessadmin.VACACIONES
         WHERE cod_emp = @cod_emp
+        ORDER BY  Estado DESC, FechaInicio DESC
       `);
     res.json(result.recordset);
   } catch (error) {
@@ -244,8 +245,8 @@ router.put('/vacaciones/:id/process', async (req, res) => {
   }
 });
 
-//Se rechazan las vacaciones
-router.put('/vacaciones/:id/reject', async (req, res) => {
+//Se rechazan las vacaciones en la aprobación
+router.put('/vacaciones/:id/reject1', async (req, res) => {
   const { id } = req.params;
 
   try {
@@ -265,6 +266,43 @@ router.put('/vacaciones/:id/reject', async (req, res) => {
 
     const vacacion = result.recordset[0];
     if (vacacion.Estado !== 'solicitada') {
+      await transaction.rollback();
+      return res.status(400).send(`La vacación ya ha sido ${vacacion.Estado.toLowerCase()}`);
+    }
+
+    await transaction.request()
+      .input('id', sql.Int, id)
+      .query('UPDATE [db_accessadmin].[VACACIONES] SET Estado = \'Rechazada\' WHERE VacacionID = @id');
+
+    await transaction.commit();
+    res.send('Vacaciones rechazadas exitosamente');
+  } catch (error) {
+    console.error('Error rechazando vacaciones:', error);
+    res.status(500).send('Error rechazando vacaciones');
+  }
+});
+
+//Se rechazan las vacaciones en la aprobación
+router.put('/vacaciones/:id/reject2', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const pool = await getConnection();
+    const transaction = new sql.Transaction(pool);
+
+    await transaction.begin(sql.ISOLATION_LEVEL.SERIALIZABLE);
+
+    const result = await transaction.request()
+      .input('id', sql.Int, id)
+      .query('SELECT Estado FROM [db_accessadmin].[VACACIONES] WHERE VacacionID = @id');
+
+    if (result.recordset.length === 0) {
+      await transaction.rollback();
+      return res.status(404).send('Vacación no encontrada');
+    }
+
+    const vacacion = result.recordset[0];
+    if (vacacion.Estado !== 'Aprobada') {
       await transaction.rollback();
       return res.status(400).send(`La vacación ya ha sido ${vacacion.Estado.toLowerCase()}`);
     }
@@ -375,6 +413,29 @@ router.get('/vacaciones/fechaMaximaFin', async (req, res) => {
   } catch (error) {
     console.error('Error calculando la fecha máxima de fin de vacaciones:', error);
     res.status(500).json({ error: 'Error calculando la fecha máxima de fin de vacaciones' });
+  }
+});
+
+router.post('/vacaciones/revisionRangoCalendario', async (req, res) => {
+  const { fechaInicio, fechaFin, cod_emp } = req.body;
+  try {
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('COD_EMP', sql.Char, cod_emp)
+      .input('FEC_INI', sql.Date, fechaInicio)
+      .input('FEC_FIN', sql.Date, fechaFin)
+      .execute('dbo.spValidarVacacion');
+
+    const { STATUS, RESULTADO } = result.recordset[0];
+
+    if (STATUS === 0) {
+      res.json({ status: STATUS, resultado: RESULTADO });
+    } else {
+      res.status(400).json({ status: STATUS, resultado: RESULTADO });
+    }
+  } catch (error) {
+    console.error('Error revisando el rango de calendario:', error);
+    res.status(500).json({ error: 'Error revisando el rango de calendario' });
   }
 });
 export default router;
