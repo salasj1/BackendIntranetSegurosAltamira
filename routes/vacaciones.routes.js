@@ -428,7 +428,7 @@ router.post('/vacaciones/revisionRangoCalendario', async (req, res) => {
 
     const { STATUS, RESULTADO } = result.recordset[0];
 
-    if (STATUS === 0) {
+    if (STATUS === 1) {
       res.json({ status: STATUS, resultado: RESULTADO });
     } else {
       res.status(400).json({ status: STATUS, resultado: RESULTADO });
