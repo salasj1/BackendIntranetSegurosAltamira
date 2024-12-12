@@ -5,6 +5,7 @@ import { buscarUsuario } from '../functions/usuario.js';
 import { encryptPassword, comparePassword } from '../functions/password.js';
 import { getConnection, sql } from '../database/connection.js';
 import { sendMailWithRetry } from '../functions/transporter.js';
+import bcrypt from 'bcrypt';
 
 const upload = multer();
 const router = express.Router();
@@ -33,9 +34,10 @@ router.put('/changepassword1/:cod_emp', async (req, res) => {
             const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+[]{}<>?';
             return chars.charAt(Math.floor(Math.random() * chars.length));
         }).join('');
-        console.log("El codigo temporal es "+codigoTemporal);
+        console.log("El codigo temporal es " + codigoTemporal);
         const passwordEnviar = codigoTemporal;
-        const codigoTemporalEncriptado = await encryptPassword(codigoTemporal); // Encriptar el código temporal
+        const codigoTemporalEncriptado = await encryptPassword(codigoTemporal); // Usar await para resolver la promesa
+        console.log("El codigo temporal encriptado es " + codigoTemporalEncriptado);
         
         const pool = await getConnection();
         await pool.request()
@@ -44,7 +46,7 @@ router.put('/changepassword1/:cod_emp', async (req, res) => {
             .execute('spGuardarCodigoTemporal'); 
 
         const mailOptions = {
-            from: 'IntranetSegurosAltamira@proseguros.com.ve',
+            from: 'IntranetSegurosAltamira@segurosaltamira.com',
             to: correo,
             subject: 'Codigo de Validación',
             text: `Estimado,\n\n El código de validación es: ${passwordEnviar}\n\n Cabe aclarar que su contraseña pasada ya no existe en el sistema. \n\n Por favor no lo comparta con nadie.\n\n Saludos.`
@@ -71,13 +73,13 @@ router.post('/verifycode/:username', async (req, res) => {
         if (!user) {
             return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
         }
-        const hashedPassword = user.password; 
-        const isMatch = await comparePassword(codigoTemporal, hashedPassword); 
+        const hashedPassword = user.password; // Asegúrate de que estás obteniendo el código temporal correcto
+        const isMatch = await bcrypt.compare(codigoTemporal, hashedPassword); 
         if (isMatch) {
             res.json({ success: true, message: 'Código verificado correctamente' });
             console.log("Código verificado correctamente");
         } else {
-            res.status(402).json({ success: false, message: 'El código escrito es incorrecto' });
+            res.status(401).json({ success: false, message: 'El código escrito es incorrecto' }); // Cambiar a 401 Unauthorized
             console.log("El código escrito es incorrecto");
         }
     } catch (error) {
@@ -88,9 +90,9 @@ router.post('/verifycode/:username', async (req, res) => {
 
 router.put('/changepassword2/:cod_emp', async (req, res) => {
     let { cod_emp } = req.params;
-    const { oldpassword, password, confirmpassword } = req.body;
+    const {  password, confirmpassword } = req.body;
 
-    if (!oldpassword || !password || !confirmpassword) {
+    if ( !password || !confirmpassword) {
         return res.status(400).json({ success: false, message: 'Todos los campos son obligatorios' });
     }
     if (password !== confirmpassword) {
@@ -98,17 +100,17 @@ router.put('/changepassword2/:cod_emp', async (req, res) => {
     }
 
     try {
-        // Lógica para cambiar la contraseña
+        const hashedPassword = await encryptPassword(password);
+        console.log('El password encriptado es ' + hashedPassword);
+        const pool = await getConnection();
+        await pool.request()
+            .input('cod_emp', sql.Char, cod_emp)
+            .input('password', sql.VarChar, hashedPassword)
+            .execute('spCambiarPassword');
+        return res.json({ success: true, message: 'Contraseña cambiada correctamente' });
     } catch (error) {
         console.error('Error al cambiar la contraseña:', error);
-        res.status(500).json({
-            success: false,
-            code: error.code,
-            message: error.originalError.message,
-            serverName: error.originalError.serverName,
-            procName: error.originalError.procName,
-            lineNumber: error.originalError.lineNumber
-        });
+        res.status(500).json({ success: false, message: 'Error al cambiar el contraseña en el sistema' });
     }
 });
 

@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer';
-import multer from 'multer';
+
 // Configuración del transportador de nodemailer
 const transporter = nodemailer.createTransport({
     host: '192.168.0.206',

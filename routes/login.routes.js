@@ -26,11 +26,7 @@ router.post('/login', async (req, res) => {
                 console.log('El usuario es nuevo');
                 res.status(401).json({ success: false, message: 'El usuario ingresado es un usuario nuevo, por favor cambiar su contraseña' });
             }
-            console.log('User found:', user);
-            console.log('Password from request:', password);
-            console.log('Password from database:', user.password);
             const passwordMatch = await bcrypt.compare(password, user.password);
-            console.log('Password match:', passwordMatch);
             
             if (passwordMatch) {
                 res.json({ 
