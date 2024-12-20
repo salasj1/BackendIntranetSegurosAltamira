@@ -65,6 +65,23 @@ router.get('/vacacionesaprobadas', async (req, res) => {
   }
 });
 
+
+router.get('/vacaciones/vacacionesProcesadas/:cod_emp', async (req, res) => {
+  const { cod_emp } = req.params;
+  console.log('Request GET received for /vacacionesProcesadas');
+
+  try {
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('cod_emp', sql.Char, cod_emp)
+      .execute(`db_accessadmin.spVacacionesProcesadasconFechaRetorno`);
+    res.json(result.recordset);
+  } catch (error) {
+    console.error('Error fetching vacaciones:', error);
+    res.status(500).json({ error: 'Error fetching vacaciones' });
+  }
+});
+
 // Se publica una solicitud de vacaciones
 router.post('/vacaciones', async (req, res) => {
   const { cod_emp, FechaInicio, FechaFin, Estado, cod_supervisor, cod_RRHH } = req.body;
@@ -436,6 +453,48 @@ router.post('/vacaciones/revisionRangoCalendario', async (req, res) => {
   } catch (error) {
     console.error('Error revisando el rango de calendario:', error);
     res.status(500).json({ error: 'Error revisando el rango de calendario' });
+  }
+});
+
+router.get('/vacaciones/CalculrDiasNoDisfrutadosVacaciones/:cod_emp', async (req, res) => {
+  const { cod_emp } = req.params;
+
+  try {
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('cod_emp', sql.Char, cod_emp)
+      .query(`
+        SELECT dbo.fnCalcularDiferenciaFechas(@cod_emp) AS diasNoDisfrutados
+      `);
+    res.json({ diasNoDisfrutados: result.recordset[0].diasNoDisfrutados });
+  } catch (error) {
+    console.error('Error calculando los dias no disfrutados:', error);
+    res.status(500).json({ error: 'Error calculando los dias no disfrutados' });
+  }
+});
+
+router.put('/retornoVacaciones', async (req, res) => {
+  const { VacacionID, FechaRetorno } = req.body;
+  
+  if (!VacacionID || isNaN(VacacionID)) {
+    return res.status(400).json({ error: 'ID inválido' });
+  }
+
+  if (!FechaRetorno) {
+    return res.status(400).json({ error: 'Fecha de retorno es requerida' });
+  }
+
+  
+  try {
+    const pool = await getConnection();
+    await pool.request()
+      .input('VacacionID', sql.Int, VacacionID)
+      .input('FechaRetorno', sql.DateTime, FechaRetorno)
+      .execute('db_accessadmin.ColocarRetornodeVacaciones');
+    res.json({ message: 'Vacaciones devueltas exitosamente' });
+  } catch (error) {
+    console.error('Error devolviendo vacaciones:', error);
+    res.status(500).json({ error: 'Error devolviendo vacaciones', message: error.message});
   }
 });
 export default router;
