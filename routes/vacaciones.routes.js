@@ -464,7 +464,7 @@ router.get('/vacaciones/CalculrDiasNoDisfrutadosVacaciones/:cod_emp', async (req
     const result = await pool.request()
       .input('cod_emp', sql.Char, cod_emp)
       .query(`
-        SELECT dbo.fnCalcularDiferenciaFechas(@cod_emp) AS diasNoDisfrutados
+        SELECT dbo.ftCalcularDiferenciaFechas(@cod_emp) AS diasNoDisfrutados
       `);
     res.json({ diasNoDisfrutados: result.recordset[0].diasNoDisfrutados });
   } catch (error) {
@@ -490,7 +490,7 @@ router.put('/retornoVacaciones', async (req, res) => {
     await pool.request()
       .input('VacacionID', sql.Int, VacacionID)
       .input('FechaRetorno', sql.DateTime, FechaRetorno)
-      .execute('db_accessadmin.ColocarRetornodeVacaciones');
+      .execute('db_accessadmin.spColocarRetornodeVacaciones');
     res.json({ message: 'Vacaciones devueltas exitosamente' });
   } catch (error) {
     console.error('Error devolviendo vacaciones:', error);
