@@ -67,6 +67,7 @@ router.post('/subir-archivo', upload.single('archivo'), async (req, res) => {
 
     // Verificar si la carpeta existe, si no, crearla
     let folderId = await buscarCarpetaPorCodEmp(drive, cod_emp);
+    console.log(folderId);
     if (!folderId) {
       folderId = await createFolder(authClient, cod_emp);
     }
