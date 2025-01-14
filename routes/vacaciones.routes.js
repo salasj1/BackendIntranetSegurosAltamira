@@ -220,7 +220,7 @@ router.put('/vacaciones/:id/process', async (req, res) => {
   // Calcular el número de días de vacaciones
   const fechaInicio = new Date(sdDesde);
   const fechaFin = new Date(sdHasta);
-  const iDias = Math.ceil((fechaFin - fechaInicio) / (1000 * 60 * 60 * 24)) + 1;
+  const iDias = 0;
   
   console.log('Request PUT received for /vacaciones/:id/process');
   

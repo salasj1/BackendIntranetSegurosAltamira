@@ -3,6 +3,7 @@ import { authorize, createFolder } from '../APIs/Drive.js';
 import { google } from 'googleapis';
 import multer from 'multer';
 import { Readable } from 'stream';
+
 const router = express.Router();
 
 // Configura multer para manejar la carga de archivos
@@ -20,11 +21,10 @@ router.get('/buscar-archivos/carpeta/:cod_emp', async (req, res) => {
       return res.status(404).json({ success: false, error: 'No se encontró la carpeta' });
     }
 
-    // Improved query using 'in parents' and spaces
     const response = await drive.files.list({
-      q: `'${folderId}' in parents and trashed = false`, // Add trashed = false to exclude trashed files
-      spaces: 'drive', // Specify the search space as 'drive'
-      fields: 'files(id, name, mimeType)' // Include mimeType if needed
+      q: `'${folderId}' in parents and trashed = false`,
+      spaces: 'drive',
+      fields: 'files(id, name, mimeType)'
     });
 
     const archivos = response.data.files;
@@ -34,7 +34,6 @@ router.get('/buscar-archivos/carpeta/:cod_emp', async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 });
-
 
 // Endpoint para crear una carpeta
 router.post('/crear-carpeta/:cod_emp', async (req, res) => {
@@ -51,7 +50,7 @@ router.post('/crear-carpeta/:cod_emp', async (req, res) => {
 
 // Endpoint para subir un archivo
 router.post('/subir-archivo', upload.single('archivo'), async (req, res) => {
-  const { cod_emp } = req.body;
+  let { cod_emp, tipo_documento } = req.body;
   const archivo = req.file;
 
   if (!archivo) {
@@ -60,16 +59,25 @@ router.post('/subir-archivo', upload.single('archivo'), async (req, res) => {
   if (!cod_emp) {
     return res.status(400).json({ error: 'Falta el parámetro cod_emp' });
   }
-
+  cod_emp = cod_emp.replace(/\s+/g, '');
   try {
     const authClient = await authorize();
     const drive = google.drive({ version: 'v3', auth: authClient });
 
     // Verificar si la carpeta existe, si no, crearla
     let folderId = await buscarCarpetaPorCodEmp(drive, cod_emp);
-    console.log(folderId);
     if (!folderId) {
       folderId = await createFolder(authClient, cod_emp);
+    }
+
+    // Renombrar el archivo según el tipo de documento
+    let nombreArchivo = archivo.originalname;
+    if (tipo_documento === 'Cédula') {
+      nombreArchivo = `CEDULA_${cod_emp}.pdf`;
+    } else if (tipo_documento === 'RIF') {
+      nombreArchivo = `RIF_${cod_emp}.pdf`;
+    } else if (tipo_documento === 'Recibo') {
+      nombreArchivo = `RECIBO_DE_PAGO_${cod_emp}.pdf`;
     }
 
     // Convertir el buffer del archivo en un stream
@@ -79,7 +87,7 @@ router.post('/subir-archivo', upload.single('archivo'), async (req, res) => {
 
     // Sube el archivo
     const fileMetadata = {
-      name: archivo.originalname,
+      name: nombreArchivo,
       parents: [folderId]
     };
     const media = {
@@ -120,8 +128,8 @@ async function buscarCarpetaPorCodEmp(drive, cod_emp) {
 }
 
 // Endpoint para subir varios archivos
-router.post('/subir-varios-archivos', upload.array('archivos', 20), async (req, res) => {
-  const { cod_emp } = req.body;
+router.post('/subir-varios-archivos', upload.array('archivos'), async (req, res) => {
+  let { cod_emp, tipo_documento } = req.body;
   const archivos = req.files;
 
   if (!archivos || archivos.length === 0) {
@@ -131,6 +139,7 @@ router.post('/subir-varios-archivos', upload.array('archivos', 20), async (req, 
     return res.status(400).json({ error: 'Falta el parámetro cod_emp' });
   }
 
+  cod_emp = cod_emp.replace(/\s+/g, '');
   try {
     const authClient = await authorize();
     const drive = google.drive({ version: 'v3', auth: authClient });
@@ -142,18 +151,34 @@ router.post('/subir-varios-archivos', upload.array('archivos', 20), async (req, 
     }
 
     // Subir cada archivo
-    const uploadedFiles = [];
-    for (let i = 0; i < archivos.length; i++) {
-      const archivo = archivos[i];
+    const fileIds = [];
+    for (const archivo of archivos) {
+      // Renombrar el archivo según el tipo de documento
+      const fechaActual = new Date().toLocaleString('es-ES', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      }).replace(/ /g, '_');
+      let nombreArchivo = archivo.originalname;
+      if (tipo_documento === 'Cédula') {
+        nombreArchivo = `CEDULA_${cod_emp}_${fechaActual}.pdf`;
+      } else if (tipo_documento === 'RIF') {
+        nombreArchivo = `RIF_${cod_emp}_${fechaActual}.pdf`;
+      } else if (tipo_documento === 'Recibo') {
+        nombreArchivo = `RECIBO_DE_PAGO_${cod_emp}_${fechaActual}.pdf`;
+      }
 
       // Convertir el buffer del archivo en un stream
       const bufferStream = new Readable();
       bufferStream.push(archivo.buffer);
       bufferStream.push(null);
 
-      // Sube el archivo
       const fileMetadata = {
-        name: archivo.originalname,
+        name: nombreArchivo,
         parents: [folderId]
       };
       const media = {
@@ -166,12 +191,12 @@ router.post('/subir-varios-archivos', upload.array('archivos', 20), async (req, 
         fields: 'id'
       });
 
-      uploadedFiles.push({ name: archivo.originalname, fileId: response.data.id });
+      fileIds.push(response.data.id);
     }
 
-    res.status(200).json({ success: true, uploadedFiles });
+    res.status(200).json({ success: true, fileIds });
   } catch (error) {
-    console.error('Error subiendo los archivos:', error);
+    console.error('Error al subir los archivos:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });

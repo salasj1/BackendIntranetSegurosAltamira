@@ -127,6 +127,26 @@ export async function uploadSimple(authClient, filePath) {
     media: media,
     fields: 'id',
     uploadType: 'media'
+
+  });
+  return file.data.id;
+}
+
+export async function uploadMultipart(authClient, folderId, archivo) {
+  const drive = google.drive({ version: 'v3', auth: authClient });
+  const fileMetadata = {
+    'name': archivo.originalname,
+    'parents': [folderId]
+  };
+  const media = {
+    mimeType: archivo.mimetype,
+    body: archivo.buffer
+  };
+  const file = await drive.files.create({
+    resource: fileMetadata,
+    media: media,
+    fields: 'id',
+    uploadType: 'multipart'
   });
   return file.data.id;
 }
