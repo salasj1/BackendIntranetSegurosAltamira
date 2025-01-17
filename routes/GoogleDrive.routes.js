@@ -3,7 +3,7 @@ import { authorize, createFolder } from '../APIs/Drive.js';
 import { google } from 'googleapis';
 import multer from 'multer';
 import { Readable } from 'stream';
-
+import { getConnection, sql } from '../database/connection.js';
 const router = express.Router();
 
 // Configura multer para manejar la carga de archivos
@@ -32,6 +32,19 @@ router.get('/buscar-archivos/carpeta/:cod_emp', async (req, res) => {
   } catch (error) {
     console.error('Error buscando los archivos:', error);
     res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Endpoint para obtener los tipos de documentos
+router.get('/tiposDocumentos', async (req, res) => {
+  try{
+    const pool= await getConnection();
+    const result = await pool.request()
+    .execute('spObtenerTipoDocumentos');
+    res.json(result.recordset);
+  }catch(error){
+    console.error('Error fetching tipos de documentos:', error);
+    res.status(500).json({ error: 'Error fetching tipos de documentos' });
   }
 });
 
@@ -164,14 +177,20 @@ router.post('/subir-varios-archivos', upload.array('archivos'), async (req, res)
         hour12: false
       }).replace(/ /g, '_');
       let nombreArchivo = archivo.originalname;
-      if (tipo_documento === 'Cédula') {
-        nombreArchivo = `CEDULA_${cod_emp}_${fechaActual}.pdf`;
-      } else if (tipo_documento === 'RIF') {
-        nombreArchivo = `RIF_${cod_emp}_${fechaActual}.pdf`;
-      } else if (tipo_documento === 'Recibo') {
-        nombreArchivo = `RECIBO_DE_PAGO_${cod_emp}_${fechaActual}.pdf`;
+      
+      nombreArchivo = `${cod_emp}_${tipo_documento}_${fechaActual}.pdf`;
+      try {
+        const pool= await getConnection();
+        const result = await pool.request()
+        .input('cod_emp', sql.NVarChar, cod_emp)
+        .input('tipo_documento', sql.NVarChar, tipo_documento)
+        .input('nombre', sql.NVarChar, nombreArchivo)
+        .input('fechaEmision', sql.date, fechaActual)
+        .execute('spInsertarDocumento');
+      }catch{
+        console.error('Error insertando el documento en la base de datos');
+        res.status(500).json({ success: false, error: error.message });
       }
-
       // Convertir el buffer del archivo en un stream
       const bufferStream = new Readable();
       bufferStream.push(archivo.buffer);

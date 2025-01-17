@@ -28,6 +28,21 @@ router.get('/empleados', async (req, res) => {
   }
 });
 
+// Ruta para obtener datos de un empleado
+/*
+router.get('/empleados/id/:cod_emp'), async(req, res){
+  try{
+    const pool = await getConnection();
+    const result = await pool.request()
+    .execute()
+  }
+  catch(error){
+
+  }
+}
+*/
+
+
 // Ruta para obtener detalles de supervisión de empleados
 router.get('/empleados/control', async (req, res) => {
   console.log('Request GET received for /empleados/control');
@@ -157,13 +172,13 @@ router.post('/empleados/supervision', async (req, res) => {
   try {
     const pool = await getConnection();
     const supervisadosXml = `<Supervisados>${supervisados.map(s => `<supervisado>${s}</supervisado>`).join('')}</Supervisados>`;
-    console.log("Antes de insertar");
+
     await pool.request()
       .input('supervisor', sql.Char, supervisor)
       .input('supervisados', sql.NVarChar, supervisadosXml)
       .input('tipo', sql.VarChar, tipo)
       .execute('spAgregarSupervision');
-      console.log("Despues de insertar");
+
     res.json({ message: 'Supervisión agregada correctamente' });
   } catch (error) {
     console.error('Error agregando supervisión:', error);
