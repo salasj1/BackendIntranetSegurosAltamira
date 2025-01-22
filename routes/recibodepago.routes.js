@@ -24,26 +24,7 @@ router.get('/recibos/:cod_emp', async (req, res) => {
         const pool = await getConnection();
         const result = await pool.request()
             .input('cod_emp', sql.VarChar, cod_emp)
-            .query(`
-            SELECT *
-            FROM [INTRANET_SEGALTA].[dbo].[VRECIBOS_LISTA]
-            WHERE cod_emp = @cod_emp
-            ORDER BY AÑIO DESC, 
-                 CASE 
-                 WHEN Mes = 'Enero' THEN 1
-                 WHEN Mes = 'Febrero' THEN 2
-                 WHEN Mes = 'Marzo' THEN 3
-                 WHEN Mes = 'Abril' THEN 4
-                 WHEN Mes = 'Mayo' THEN 5
-                 WHEN Mes = 'Junio' THEN 6
-                 WHEN Mes = 'Julio' THEN 7
-                 WHEN Mes = 'Agosto' THEN 8
-                 WHEN Mes = 'Septiembre' THEN 9
-                 WHEN Mes = 'Octubre' THEN 10
-                 WHEN Mes = 'Noviembre' THEN 11
-                 WHEN Mes = 'Diciembre' THEN 12
-                 END DESC;
-            `);
+            .execute('ObtenerRecibosPago');
                 // [reci_num], [cod_emp], [AÑIO], [Mes], [Contrato]
 
         

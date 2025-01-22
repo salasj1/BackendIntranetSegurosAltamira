@@ -40,6 +40,7 @@ router.get('/permisos/supervisor/:cod_supervisor', async (req, res) => {
           P.cod_emp,
           P.cod_supervisor,
           P.cod_RRHH,
+          P.descontable,
           E.ci,
           E.nombres,
           E.apellidos,
@@ -61,7 +62,7 @@ router.get('/permisos/supervisor/:cod_supervisor', async (req, res) => {
 
 // Ruta para crear un nuevo permiso
 router.post('/permisos', async (req, res) => {
-  const { cod_emp, Fecha_inicio, Fecha_Fin, Titulo, Motivo, descripcion } = req.body;
+  const { cod_emp, Fecha_inicio, Fecha_Fin, Titulo, Motivo, descripcion, descontable } = req.body;
   console.log('Request POST received for /permisos');
   try {
     const pool = await getConnection();
@@ -69,12 +70,13 @@ router.post('/permisos', async (req, res) => {
       .input('cod_emp', sql.Char, cod_emp)
       .input('Fecha_inicio', sql.Date, Fecha_inicio)
       .input('Fecha_Fin', sql.Date, Fecha_Fin)
-      .input('Titulo', sql.VarChar, Titulo)
+      .input('Titulo', sql.VarChar, 'Permiso: ' + Motivo)
       .input('Motivo', sql.VarChar, Motivo)
       .input('descripcion', sql.VarChar, descripcion)
+      .input('descontable', sql.Bit, descontable)
       .query(
-        `INSERT INTO [db_accessadmin].[PERMISOS] (cod_emp, Fecha_inicio, Fecha_Fin, Titulo, Motivo, Estado, descripcion)
-         VALUES (@cod_emp, @Fecha_inicio, @Fecha_Fin, @Titulo, @Motivo, 'Pendiente', @descripcion)`
+      `INSERT INTO [db_accessadmin].[PERMISOS] (cod_emp, Fecha_inicio, Fecha_Fin, Titulo, Motivo, Estado, descripcion, descontable)
+       VALUES (@cod_emp, @Fecha_inicio, @Fecha_Fin, @Titulo, @Motivo, 'Pendiente', @descripcion, @descontable)`
       );
     res.status(201).send('Permiso creado exitosamente');
   } catch (error) {
@@ -343,6 +345,7 @@ router.get('/permisos/aprobadosProcesados', async (req, res) => {
           P.Motivo,
           P.Estado,
           P.descripcion,
+          P.descontable,
           E.nombre_completo,
           E.nombres,
           E.apellidos,
@@ -357,6 +360,20 @@ router.get('/permisos/aprobadosProcesados', async (req, res) => {
   } catch (error) {
     console.error('Error obteniendo permisos aprobados y procesados:', error);
     res.status(500).json({ error: 'Error obteniendo permisos aprobados y procesados' });
+  }
+});
+
+
+router.get('/permisos/motivos', async (req, res) => {
+  console.log('Request GET received for /permisos/motivos');
+  try {
+    const pool = await getConnection();
+    const result = await pool.request()
+      .execute('spObtenerMotivosPermisos');
+    res.json(result.recordset);
+  } catch (error) {
+    console.error('Error al obtener motivos de permisos:', error);
+    res.status(500).send('Error al obtener motivos de permisos');
   }
 });
 
