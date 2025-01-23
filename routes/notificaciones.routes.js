@@ -1,10 +1,10 @@
 import express from 'express';
-import { getConnection, sql } from '../connection.js';
+import { getConnection, sql } from '../database/connection.js';
 
 const router = express.Router();
 
 // Obtener notificaciones de un empleado con estatus 1 y 2
-router.get('/notificaciones/:cod_emp', async (req, res) => {
+router.get('/:cod_emp', async (req, res) => {
     const { cod_emp } = req.params;
     try {
         const pool = await getConnection();
@@ -18,7 +18,7 @@ router.get('/notificaciones/:cod_emp', async (req, res) => {
 });
 
 // Crear una nueva notificación
-router.post('/notificaciones', async (req, res) => {
+router.post('/', async (req, res) => {
     const { titulo, descripcion, us_emite, us_recibe } = req.body;
     try {
         const pool = await getConnection();
@@ -37,7 +37,7 @@ router.post('/notificaciones', async (req, res) => {
 });
 
 // Actualizar el estatus de una notificación
-router.put('/notificaciones/:id', async (req, res) => {
+router.put('/:id', async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
     try {
@@ -53,13 +53,13 @@ router.put('/notificaciones/:id', async (req, res) => {
 });
 
 // Eliminar (lógicamente) una notificación
-router.delete('/notificaciones/:id', async (req, res) => {
+router.delete('/:id', async (req, res) => {
     const { id } = req.params;
     try {
         const pool = await getConnection();
         await pool.request()
             .input('id', sql.Int, id)
-            .execute('sp_DeleteNotificacion');
+            .execute('sp_BorrarNotificacion');
         res.sendStatus(204);
     } catch (error) {
         res.status(500).send(error.message);
