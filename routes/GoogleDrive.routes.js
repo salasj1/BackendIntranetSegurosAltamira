@@ -178,19 +178,21 @@ router.post('/subir-varios-archivos', upload.array('archivos'), async (req, res)
       }).replace(/ /g, '_');
       let nombreArchivo = archivo.originalname;
       
-      nombreArchivo = `${cod_emp}_${tipo_documento}_${fechaActual}.pdf`;
+      nombreArchivo = `${cod_emp}_${tipo_documento}`;
       try {
         const pool= await getConnection();
         const result = await pool.request()
-        .input('cod_emp', sql.NVarChar, cod_emp)
+        .input('cod_emp', sql.Char, cod_emp)
         .input('tipo_documento', sql.NVarChar, tipo_documento)
         .input('nombre', sql.NVarChar, nombreArchivo)
         .input('fechaEmision', sql.date, fechaActual)
-        .execute('spInsertarDocumento');
+        .execute('spInsertarDocumentos');
       }catch{
         console.error('Error insertando el documento en la base de datos');
         res.status(500).json({ success: false, error: error.message });
       }
+
+      nombreArchivo = `${cod_emp}_${tipo_documento}_${fechaActual}`;
       // Convertir el buffer del archivo en un stream
       const bufferStream = new Readable();
       bufferStream.push(archivo.buffer);
