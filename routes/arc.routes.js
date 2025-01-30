@@ -5,6 +5,8 @@ import { getConnection, sql } from '../database/connection.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import { sendMailWithRetry } from '../functions/transporter.js';
+
 const router = express.Router();
 const upload = multer();
 
@@ -33,32 +35,6 @@ router.get('/arc/:cod_emp', async (req, res) => {
     }
 });
 
-// Configuración del transportador de nodemailer
-const transporter = nodemailer.createTransport({
-    host: '192.168.0.206',
-    port: 25,
-    secure: false, 
-    tls: {
-        rejectUnauthorized: false
-    },
-    logger: false,
-    debug: true
-});
-
-// Función para enviar correo con reintentos
-const sendMailWithRetry = async (mailOptions, retries = 3) => {
-    for (let attempt = 1; attempt <= retries; attempt++) {
-        try {
-            await transporter.sendMail(mailOptions);
-            return { success: true };
-        } catch (error) {
-            console.error(`Attempt ${attempt} failed:`, error);
-            if (attempt === retries) {
-                return { success: false, error };
-            }
-        }
-    }
-};
 
 
 

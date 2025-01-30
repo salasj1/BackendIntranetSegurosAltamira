@@ -2,8 +2,8 @@ import nodemailer from 'nodemailer';
 
 // Configuración del transportador de nodemailer
 const transporter = nodemailer.createTransport({
-    host: '192.168.0.206',
-    port: 25,
+    host: 'smtp-relay.gmail.com',
+    port: 587,
     secure: false, 
     tls: {
         rejectUnauthorized: false
