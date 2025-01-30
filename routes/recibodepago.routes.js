@@ -5,6 +5,7 @@ import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import { sendMailWithRetry } from '../functions/transporter.js';
 
 const router = express.Router();
 const upload = multer(); // Middleware para manejar archivos
@@ -63,35 +64,6 @@ router.get('/recibo/:reci_num/:cod_emp', async (req, res) => {
         res.status(500).json({ success: false, message: 'Failed to fetch data', error: error });
     }
 });
-
-
-
-// Configuración del transporte de nodemailer
-const transporter = nodemailer.createTransport({
-    host: '192.168.0.206',
-    port: 25,
-    secure: false, // true para 465, false para otros puertos
-    tls: {
-        rejectUnauthorized: false
-    },
-    logger: false,
-    debug: false
-});
-
-// Función para enviar correo con reintentos
-const sendMailWithRetry = async (mailOptions, retries = 3) => {
-    for (let attempt = 1; attempt <= retries; attempt++) {
-        try {
-            const info = await transporter.sendMail(mailOptions);
-            return { success: true, info };
-        } catch (error) {
-            console.error(`Error enviando el correo (intento ${attempt}):`, error);
-            if (attempt === retries) {
-                return { success: false, error };
-            }
-        }
-    }
-};
 
 // Ruta para enviar el recibo de pago por correo
 router.post('/send-recibo', upload.single('pdf'), async (req, res) => {
@@ -166,7 +138,7 @@ router.post('/send-recibo-secundario', upload.single('pdf'), async (req, res) =>
 
         let nombre_empleado = result.recordset[0].nombre_completo.replace(/,/g, '');
 
-        const cuerpo = await pool.request()
+        let cuerpo = await pool.request()
             .input('reci_num', sql.Int, reci_num)
             .input('cod_emp', sql.Char, cod_emp)
             .query('SELECT [dbo].[ftSACuerpoCorreoRecibo] (@reci_num, @cod_emp) AS cuerpo');
@@ -204,7 +176,7 @@ router.post('/send-recibo-secundario', upload.single('pdf'), async (req, res) =>
             res.status(500).json({ success: false, message: 'Error enviando el correo', error: resultMail.error });
         }
     } catch (error) {
-        console.error('ERROR: ' + JSON.stringify(error));
+        console.error('ERROR: ' + error);
         res.status(500).json({ success: false, message: 'Error enviando el correo', error });
     }
 });

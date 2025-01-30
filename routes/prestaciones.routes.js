@@ -5,6 +5,7 @@ import { getConnection, sql } from '../database/connection.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import { sendMailWithRetry } from '../functions/transporter.js';
 
 const router = express.Router();
 const upload = multer();
@@ -41,31 +42,7 @@ router.get('/prestaciones/:cod_emp', async (req, res) => {
     }
 });
 
-// Configuración del transporte de nodemailer
-const transporter = nodemailer.createTransport({
-    host: '192.168.0.206',
-    port: 25,
-    secure: false, 
-    tls: {
-        rejectUnauthorized: false
-    },
-    logger: true,
-    debug: true
-});
 
-const sendMailWithRetry = async (mailOptions, retries = 3) => {
-    for (let attempt = 1; attempt <= retries; attempt++) {
-        try {
-            const info = await transporter.sendMail(mailOptions);
-            return { success: true, info };
-        } catch (error) {
-            console.error(`Error enviando el correo (intento ${attempt}):`, error);
-            if (attempt === retries) {
-                return { success: false, error };
-            }
-        }
-    }
-};
 
 router.post('/send-prestaciones', upload.single('pdf'), async (req, res) => {
     const { cod_emp } = req.body;
@@ -87,12 +64,10 @@ router.post('/send-prestaciones', upload.single('pdf'), async (req, res) => {
         }
 
         const { correo_e } = result.recordset[0];
-       
-        // Comprimir el archivo PDF
-        //const compressedPdfBuffer = zlib.gzipSync(pdfBuffer);
+
         const mailOptions = {
             from: 'IntranetSegurosAltamira@segurosaltamira.com',
-            to:  correo_e, 
+            to: correo_e, 
             subject: 'Movimientos de Prestaciones Sociales',
             text: `Adjunto encontrarás el PDF con los movimientos de prestaciones sociales del empleado con código ${cod_emp}.`,
             attachments: [
@@ -139,22 +114,14 @@ router.post('/send-prestaciones-secundario', upload.single('pdf'), async (req, r
             return res.status(404).json({ success: false, message: 'Empleado no encontrado' });
         }
         let nombre_empleado = result.recordset[0].nombre_completo.replace(/,/g, '');
-        
-        /* const cuerpo = await pool.request()
-            .input('reci_num', sql.Int, reci_num)
-            .input('cod_emp', sql.Char, cod_emp)
-            .query('SELECT [dbo].[ftSACuerpoARC] (@reci_num, @cod_emp) AS cuerpo');
-        
-        cuerpo = cuerpo.recordset[0].cuerpo; */
 
-        // Leer el archivo correo_ARC.html
+        // Leer el archivo correo_Prestaciones.html
         const templatePath = path.join(__dirname, "../templates/correo_Prestaciones.html");
         let htmlContent = fs.readFileSync(templatePath, 'utf8');
 
         // Reemplazar los placeholders en el contenido HTML
         htmlContent = htmlContent.replace('${nombre_empleado}', nombre_empleado);
-/*         htmlContent = htmlContent.replace('${cuerpo}',cuerpo);
- */
+
         const mailOptions = {
             from: 'IntranetSegurosAltamira@segurosaltamira.com',
             to: correo_secundario,
@@ -172,7 +139,7 @@ router.post('/send-prestaciones-secundario', upload.single('pdf'), async (req, r
 
         // Enviar el correo con reintentos
         const resultMail = await sendMailWithRetry(mailOptions);
-        
+
         if (resultMail.success) {
             res.json({ success: true, message: 'Correo enviado', info: resultMail.info });
         } else {

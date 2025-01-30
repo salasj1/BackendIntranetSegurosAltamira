@@ -9,36 +9,12 @@ import numeroPalabra from 'numero-palabra';
 import { PDFDocument } from 'pdf-lib';
 import archiver from 'archiver';
 import sharp from 'sharp';
+import { sendMailWithRetry } from '../functions/transporter.js';
 
 const router = express.Router();
 const upload = multer();
 
-// Configuración del transportador de nodemailer
-const transporter = nodemailer.createTransport({
-    host: '192.168.0.206',
-    port: 25,
-    secure: false, 
-    tls: {
-        rejectUnauthorized: false
-    },
-    logger: false,
-    debug: true,
-    maxMessageSize: 52428800 // 50 MB
-});
 
-const sendMailWithRetry = async (mailOptions, retries = 3) => {
-  for (let attempt = 1; attempt <= retries; attempt++) {
-      try {
-          await transporter.sendMail(mailOptions);
-          return { success: true };
-      } catch (error) {
-          console.error(`Attempt ${attempt} failed:`, error);
-          if (attempt === retries) {
-              return { success: false, error };
-          }
-      }
-  }
-};
 
 // Obtener el directorio actual utilizando import.meta.url
 const __filename = fileURLToPath(import.meta.url);
