@@ -85,6 +85,21 @@ router.post('/permisos', async (req, res) => {
   }
 });
 
+router.get('/permisos/notificacion/Empleado/id/:cod_emp', async (req, res) => {
+  const { cod_emp } = req.params;
+  console.log('Request GET received for /permisos/notificacion/Empleado/id/:cod_emp');
+  try {
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('cod_emp', sql.Char, cod_emp)
+      .execute('spManejoNotificacionEmpleado');
+    res.json(result.recordset);
+  } catch (error) {
+    console.error('Error al obtener permisos nuevos:', error);
+    res.status(500).send('Error al obtener permisos nuevos');
+  }
+});
+
 router.get('/permisos/notificacion/Supervisor/:cod_supervisor', async (req, res) => {
   const { cod_supervisor } = req.params;
   console.log('Request GET received for /permisos/notificacion/Supervisor/:cod_supervisor');
@@ -92,41 +107,7 @@ router.get('/permisos/notificacion/Supervisor/:cod_supervisor', async (req, res)
     const pool = await getConnection();
     const result = await pool.request()
       .input('cod_supervisor', sql.Char, cod_supervisor)
-      .query(`
-        SELECT 
-            P.PermisosID,
-            P.Estado,
-            P.Titulo,
-            P.cod_emp,
-            E.ci,
-            E.nombres,
-            E.apellidos
-        FROM 
-            db_accessadmin.PERMISOS P
-        JOIN 
-            dbo.VSNEMPLE E ON P.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS = E.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS
-        JOIN 
-            db_accessadmin.SUPERVISION S ON P.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS = S.Cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS
-        WHERE 
-            S.Cod_supervisor COLLATE SQL_Latin1_General_CP1_CI_AS = @cod_supervisor
-            AND P.Estado IN ('Pendiente')
-        UNION
-        SELECT 
-            P.PermisosID,
-            P.Estado,
-            P.Titulo,
-            P.cod_emp,
-            E.ci,
-            E.nombres,
-            E.apellidos
-        FROM 
-            db_accessadmin.PERMISOS P
-        JOIN 
-            dbo.VSNEMPLE E ON P.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS = E.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS
-        WHERE 
-            P.cod_emp = @cod_supervisor
-            AND P.Estado IN ('Aprobada','Rechazada'); 
-      `);
+      .execute('spManejoNotificacionSupervisor');
     res.json(result.recordset);
   } catch (error) {
     console.error('Error al obtener permisos nuevos:', error);
@@ -135,52 +116,14 @@ router.get('/permisos/notificacion/Supervisor/:cod_supervisor', async (req, res)
 });
 
 // Ruta para obtener permisos pendientes de un supervisor específico y todos los permisos aprobados de todos los empleados
-router.get('/permisos/nuevos/:cod_supervisor', async (req, res) => {
+router.get('/permisos/notificacion/RRHH/:cod_supervisor', async (req, res) => {
   const { cod_supervisor } = req.params
   console.log('Request GET received for /permisos/nuevos/:cod_supervisor');
   try {
     const pool = await getConnection();
     const result = await pool.request()
       .input('cod_supervisor', sql.Char, cod_supervisor)
-      .query(`
-        SELECT 
-          P.PermisosID,
-          P.Fecha_inicio,
-          P.Fecha_Fin,
-          P.Estado,
-          P.Titulo,
-          P.Motivo,
-          P.descripcion,
-          P.cod_emp,
-          P.cod_supervisor,
-          P.cod_RRHH,
-          E.ci,
-          E.nombres,
-          E.apellidos
-        FROM db_accessadmin.PERMISOS P
-        JOIN dbo.VSNEMPLE E ON P.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS = E.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS
-        JOIN db_accessadmin.SUPERVISION S ON P.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS = S.Cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS
-        WHERE S.Cod_supervisor COLLATE SQL_Latin1_General_CP1_CI_AS = @cod_supervisor
-        AND P.Estado IN ('Pendiente', 'Aprobada')
-        UNION
-        SELECT 
-          P.PermisosID,
-          P.Fecha_inicio,
-          P.Fecha_Fin,
-          P.Estado,
-          P.Titulo,
-          P.Motivo,
-          P.descripcion,
-          P.cod_emp,
-          P.cod_supervisor,
-          P.cod_RRHH,
-          E.ci,
-          E.nombres,
-          E.apellidos
-        FROM db_accessadmin.PERMISOS P
-        JOIN dbo.VSNEMPLE E ON P.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS = E.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS
-        WHERE P.Estado IN ('Aprobada','Rechazada') and P.cod_emp=@cod_supervisor 
-      `);
+      .execute('spManejoNotificacionRRHH');
     res.json(result.recordset);
   } catch (error) {
     console.error('Error al obtener permisos nuevos:', error);
