@@ -171,33 +171,15 @@ router.put('/permisos/:PermisosID/process', async (req, res) => {
     const pool = await getConnection();
     const transaction = new sql.Transaction(pool);
 
-    await transaction.begin(sql.ISOLATION_LEVEL.SERIALIZABLE);
-
-    const result = await transaction.request()
-      .input('PermisosID', sql.Int, PermisosID)
-      .query('SELECT Estado FROM [db_accessadmin].[PERMISOS] WHERE PermisosID = @PermisosID');
-
-    if (result.recordset.length === 0) {
-      await transaction.rollback();
-      return res.status(404).send('Permiso no encontrado');
-    }
-
-    const permiso = result.recordset[0];
-    if (permiso.Estado !== 'Aprobada') {
-      await transaction.rollback();
-      return res.status(400).send(`El permiso ya ha sido ${permiso.Estado.toLowerCase()}`);
-    }
-
-    await transaction.request()
+    const result = await pool.request()
       .input('PermisosID', sql.Int, PermisosID)
       .input('cod_RRHH', sql.Char, cod_RRHH)
-      .query('UPDATE [db_accessadmin].[PERMISOS] SET Estado = \'Procesada\', cod_RRHH = @cod_RRHH WHERE PermisosID = @PermisosID');
+      .execute('spProcesarPermiso');
 
-    await transaction.commit();
     res.send('Permiso procesado exitosamente');
   } catch (error) {
     console.error('Error al procesar permiso:', error);
-    res.status(500).send('Error al procesar permiso');
+    res.status(500).send(error?.message);
   }
 });
 

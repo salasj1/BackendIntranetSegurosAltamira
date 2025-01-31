@@ -464,7 +464,7 @@ router.get('/vacaciones/CalculrDiasNoDisfrutadosVacaciones/:cod_emp', async (req
     const result = await pool.request()
       .input('cod_emp', sql.Char, cod_emp)
       .query(`
-        SELECT dbo.ftCalcularDiferenciaFechas(@cod_emp) AS diasNoDisfrutados
+        SELECT dbo.ftCalcularDiferenciaFechasIncluyePermisosSinProcesar(@cod_emp) AS diasNoDisfrutados
       `);
     res.json({ diasNoDisfrutados: result.recordset[0].diasNoDisfrutados });
   } catch (error) {
