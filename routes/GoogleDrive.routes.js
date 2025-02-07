@@ -142,7 +142,7 @@ async function buscarCarpetaPorCodEmp(drive, cod_emp) {
 
 // Endpoint para subir varios archivos
 router.post('/subir-varios-archivos', upload.array('archivos'), async (req, res) => {
-  let { cod_emp, tipo_documento } = req.body;
+  let { cod_emp, tipo_documento, fecha_actualizacion } = req.body;
   const archivos = req.files;
 
   if (!archivos || archivos.length === 0) {
@@ -163,35 +163,34 @@ router.post('/subir-varios-archivos', upload.array('archivos'), async (req, res)
       folderId = await createFolder(authClient, cod_emp);
     }
 
+    console.log('Request body:', fecha_actualizacion);
     // Subir cada archivo
     const fileIds = [];
     for (const archivo of archivos) {
       // Renombrar el archivo según el tipo de documento
-      const fechaActual = new Date().toLocaleString('es-ES', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false
-      }).replace(/ /g, '_');
+      const fechaActual = new Date();
       let nombreArchivo = archivo.originalname;
-      
+      console.log('fecha Actual: ', fechaActual);
       nombreArchivo = `${cod_emp}_${tipo_documento}`;
       try {
         const pool= await getConnection();
         const result = await pool.request()
         .input('cod_emp', sql.Char, cod_emp)
-        .input('tipo_documento', sql.NVarChar, tipo_documento)
+        .input('TipoDocumento', sql.NVarChar, tipo_documento)
         .input('nombre', sql.NVarChar, nombreArchivo)
-        .input('fechaEmision', sql.date, fechaActual)
-        .execute('spInsertarDocumentos');
-      }catch{
-        console.error('Error insertando el documento en la base de datos');
-        res.status(500).json({ success: false, error: error.message });
+        .input('fechaEmision', sql.DateTime, fechaActual)
+        .input('Recordatorio' ,sql.Date, fecha_actualizacion) 
+        .output('STATUS', sql.Int)
+        .output('RESULTADO', sql.VarChar(2500))
+        .execute('[db_accessadmin].[spCargarDocumento]');
+        
+        // Agregar el resultado a la lista de resultados
+        fileIds.push(result.recordset);
+      }catch(error){
+        console.error('Error insertando el documento en la base de datos:', error);
+        throw new Error('Error insertando el documento en la base de datos');
       }
-
+      
       nombreArchivo = `${cod_emp}_${tipo_documento}_${fechaActual}`;
       // Convertir el buffer del archivo en un stream
       const bufferStream = new Readable();
