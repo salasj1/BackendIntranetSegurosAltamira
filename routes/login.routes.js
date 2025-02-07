@@ -47,7 +47,7 @@ router.post('/login', async (req, res) => {
             }
         } else {
             console.log('User not found');
-            res.status(401).json({ success: false, message: 'No se encuentra el usuario' });
+            res.status(401).json({ success: false, message: 'Correo no encontrado' });
         }
     } catch (error) {
         console.error('ERROR: ' + JSON.stringify(error));
