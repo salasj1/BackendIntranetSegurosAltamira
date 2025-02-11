@@ -12,6 +12,7 @@ import changepassword from './routes/changepassword.routes.js';
 import constancideTrabajoRouter from './routes/constanciaDeTrabajo.routes.js';
 import googleDriveRoutes from './routes/GoogleDrive.routes.js';
 import notificacionRouter from './routes/notificaciones.routes.js';
+import expedienteRouter from './routes/expediente.routes.js';
 const app = express();
 app.use(express.json()); 
 app.use(express.urlencoded({ extended: true })); 
@@ -20,8 +21,9 @@ app.use(cors({
     credentials: true
 }));
 app.use('/google-drive', googleDriveRoutes);
-app.use('/notificaciones', notificacionRouter)
+app.use('/notificaciones', notificacionRouter);
 app.use(changepassword);
+app.use('/expediente', expedienteRouter);
 app.use(empleadosRouter);
 app.use(signupRouter);
 app.use(login);
@@ -31,5 +33,6 @@ app.use(constancideTrabajoRouter);
 app.use(arc);
 app.use(vacacionesRouter);
 app.use(permisosRouter);
+
 
 export default app;
