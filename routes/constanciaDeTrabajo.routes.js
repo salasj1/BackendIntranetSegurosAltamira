@@ -33,17 +33,15 @@ router.get('/constancia/:cod_emp', async (req, res) => {
         .input('mostrarsueldo', sql.Char, mostrarsueldo)
         .execute('spSARepConstanciaDeTrabajo');
         console.log(result.recordset[0].sueldoBase);
-
-    
       if (result.recordset[0].sueldoBase!==null) {
         const [entero, decimal] = result.recordset[0].sueldoBase.toString().split('.');
         const enteroEnPalabras = numeroPalabra(entero);
         let decimalEnPalabras = '';
         if (decimal) {
           decimalEnPalabras = `con ${decimal}/100 `;
-          const sueldoBaseEnPalabras = `${enteroEnPalabras.toUpperCase()} ${decimalEnPalabras.toUpperCase()}`;
-          result.recordset[0].sueldoBase = sueldoBaseEnPalabras+` (Bs. ${result.recordset[0].sueldoBase})`;
         }
+        const sueldoBaseEnPalabras = `${enteroEnPalabras.toUpperCase()} ${decimalEnPalabras.toUpperCase()}`;
+        result.recordset[0].sueldoBase = sueldoBaseEnPalabras+` (Bs. ${result.recordset[0].sueldoBase})`;
       }
       
       res.json(result.recordset);
