@@ -40,24 +40,7 @@ router.get('/vacacionesaprobadas', async (req, res) => {
   try {
     const pool = await getConnection();
     const result = await pool.request()
-      .query(`SELECT DISTINCT
-        V.VacacionID,
-        V.FechaInicio,
-        V.FechaFin,
-        V.Estado,
-        V.cod_emp,
-        E.nombre_completo AS nombre_empleado,
-        E.nombres AS nombres_empleado,
-        E.apellidos AS apellidos_empleado,
-        S.nombre_completo AS nombre_supervisor,
-        S.nombres AS nombres_supervisor,
-        S.apellidos AS apellidos_supervisor,
-        E.ci,
-        V.cod_supervisor
-      FROM db_accessadmin.VACACIONES V
-      JOIN dbo.VSNEMPLE E ON V.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS = E.cod_emp
-      JOIN dbo.VSNEMPLE S ON V.cod_supervisor COLLATE SQL_Latin1_General_CP1_CI_AS = S.cod_emp
-      WHERE V.Estado IN ('aprobada','Procesada')`);
+      .execute(`spMostrarVacacionesRRHH`);
     res.json(result.recordset);
   } catch (error) {
     console.error('Error fetching vacaciones:', error);
@@ -120,29 +103,11 @@ router.get('/vacaciones/supervisor/:cod_supervisor', async (req, res) => {
     const pool = await getConnection();
     const result = await pool.request()
       .input('cod_supervisor', sql.Char, cod_supervisor)
-      .query(`
-        SELECT DISTINCT
-          V.VacacionID,
-          V.FechaInicio,
-          V.FechaFin,
-          V.Estado,
-          V.cod_emp,
-          E.nombres,
-          E.apellidos,
-          E.nombre_completo,
-          E.ci,
-          E.des_depart AS departamento,
-          E.des_cargo AS cargo
-        FROM db_accessadmin.VACACIONES V
-        JOIN dbo.VSNEMPLE E ON V.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS = E.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS
-        JOIN db_accessadmin.SUPERVISION S ON V.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS = S.Cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS
-        WHERE S.Cod_supervisor COLLATE SQL_Latin1_General_CP1_CI_AS = @cod_supervisor
-        AND V.Estado IN ('solicitada', 'aprobada') AND S.Tipo=1
-      `);
+      .execute('spMostrarVacacionesSupervisor');
     res.json(result.recordset);
   } catch (error) {
-    console.error('Error fetching supervisor vacaciones:', error);
-    res.status(500).json({ error: 'Error fetching supervisor vacaciones' });
+    console.error('Error al cargar las vacaciones que le han solicitado al supervisor:', error);
+    res.status(500).json({ error: 'Error al cargar las vacaciones que le han solicitado al supervisor' });
   }
 });
 
