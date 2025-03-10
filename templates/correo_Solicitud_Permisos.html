@@ -17,7 +17,7 @@
             padding: 20px;
         }
         .email-header {
-            font-size: 24px;
+            font-size: 18px;
             font-weight: bold;
             color: #333333;
             margin-bottom: 20px;
@@ -33,8 +33,9 @@
             color: #777777;
         }
         .email-image-footer {
-            display: block;
+            display: flex;
             width: calc(100%);
+            flex-grow: 1;
             font-size: 14px;
             color: #777777;
             border-radius: 0 0 10px 10px;
@@ -45,16 +46,16 @@
     <div class="email-container">
         <div class="email-content">
             <div class="email-conten-info">
-            <div class="email-header">Recibo de Pago</div>
+                
+            <div class="email-header">Solicitud de Permiso</div>
             <div class="email-body">
                 <p>${cuerpo}</p>
             </div>
-            
             <div class="email-footer">
                 <p>Intranet de Seguros Altamira</p>
             </div>
             </div>
-            <img src="https://media.licdn.com/dms/image/v2/D4E3DAQF0mlb0e_m8-Q/image-scale_191_1128/image-scale_191_1128/0/1678969137498/seguros_altamira_cover?e=2147483647&v=beta&t=oOSJm4jhoR01nmRztPezxIuPIdnn2WWJ8kt4j3tUYuE" class="email-image-footer" alt="Seguros Altamira">
+            <img src="https://media.licdn.com/dms/image/v2/D4E3DAQF0mlb0e_m8-Q/image-scale_191_1128/image-scale_191_1128/0/1678969137498/seguros_altamira_cover?e=2147483647&v=beta&t=oOSJm4jhoR01nmRztPezxIuPIdnn2WWJ8kt4j3tUYuE" class="email-image-footer" alt="Seguros Altamira"  style="text-align: left;">
         </div>
     </div>
 </body>

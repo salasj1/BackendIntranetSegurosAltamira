@@ -1,8 +1,6 @@
 import express from 'express';
-
 import app from './app.js';
 import { getConnection} from './database/connection.js';
-import ad from './adconfig.js'; 
 
 
 app.use(express.json());

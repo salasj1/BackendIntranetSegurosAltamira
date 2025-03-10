@@ -302,4 +302,74 @@ router.get('/permisos/motivos', async (req, res) => {
   }
 });
 
+router.post('/permisos/enviarCorreo', async (req, res) => {
+  const { cod_emp, fechaInicio, fechaFin,Titulo,Motivo  } = req.body;
+
+  console.log('Request POST received for /permisos/enviarCorreo');
+  console.log('cod_emp:', cod_emp);
+  console.log('fechaInicio:', fechaInicio);
+  console.log('fechaRetorno:', fechaRetorno);
+  console.log('Titulo:', Titulo);
+  console.log('Motivo:', Motivo);
+  try {
+    const pool = await getConnection();
+
+    // Obtener los días de vacaciones
+    let dias = await pool.request()
+      .input('fechaInicio', sql.Date, fechaInicio)
+      .input('fechaFin', sql.Date, fechaFin)
+      .query('SELECT [dbo].[ftCalcularDiferenciaDiasVacacionesHabiles] (@fechaInicio, @fechaFin)');
+
+    // Buscar supervisores
+    let supervisores = await pool.request()
+      .input('cod_emp', sql.Char, cod_emp)
+      .input('tipo', sql.Int, 2)
+      .execute('[db_accessadmin].[spBuscarSupervisores]');
+
+    // Enviar correos a cada supervisor
+    for (const supervisor of supervisores.recordset) {
+      if (!supervisor.correo) {
+        console.error('Supervisor email is missing:', supervisor);
+        continue; // Saltar este supervisor si no tiene correo
+      }
+
+      let result = await pool.request()
+        .input('cod_emp', sql.Char, cod_emp)
+        .input('FechaInicio', sql.Date, fechaInicio)
+        .input('FechaFin', sql.Date, fechaFin)
+        .input('FechaRetorno', sql.Date, fechaRetorno)
+        .input('nombresSupervisor', sql.VarChar, supervisor.nombres)
+        .input('apellidosSupervisor', sql.VarChar, supervisor.apellidos)
+        .input('Titulo', sql.VarChar, Titulo)
+        .input('Motivo', sql.VarChar, Motivo)
+        .query('SELECT [dbo].[ftCorreoSolcitudVacaciones] (@cod_emp, @FechaInicio, @FechaFin, @FechaRetorno, @nombresSupervisor, @apellidosSupervisor) AS result');
+
+      const { result: cuerpo, trabajador } = JSON.parse(result.recordset[0].result);
+
+      // Leer el archivo correo_recibo.html
+      const templatePath = path.join(__dirname, "../templates/correo_Solicitud_vacaciones.html");
+      let htmlContent = fs.readFileSync(templatePath, 'utf8');
+      htmlContent = htmlContent.replace('${cuerpo}', cuerpo);
+
+      const mailOptions = {
+        from: 'IntranetSegurosAltamira@segurosaltamira.com',
+        to: supervisor.correo,
+        subject: `Solicitud de Permisos de ${trabajador}`,
+        html: htmlContent
+      };
+
+      // Enviar el correo directamente
+      const emailResult = await sendEmail(mailOptions);
+      if (!emailResult.success) {
+        return res.status(500).json({ success: false, message: emailResult.message, error: emailResult.error });
+      }
+    }
+
+    res.json({ success: true, message: 'Emails sent successfully' });
+  } catch (error) {
+    console.error('Error enviando correos:', error);
+    res.status(500).json({ success: false, message: 'Error enviando correos', error });
+  }
+});
+
 export default router;

@@ -1,8 +1,14 @@
 import express from 'express';
 import { getConnection, sql } from '../database/connection.js';
-
+import path from 'path';
+import { fileURLToPath } from 'url';
+import fs from 'fs';
+import {sendEmail } from '../functions/EmailQueue.js';
+import { enviarCorreoSolicitudVacaciones, enviarCorreoSolicitudPermiso } from '../functions/enviocorreo.js';
 const router = express.Router();
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 // Se obtienen las vacaciones de un empleado
 router.get('/vacaciones/id/:cod_emp', async (req, res) => {
   const { cod_emp } = req.params;
@@ -66,32 +72,44 @@ router.get('/vacaciones/vacacionesProcesadas/:cod_emp', async (req, res) => {
 });
 
 // Se publica una solicitud de vacaciones
+// Modificación del endpoint existente para la inserción de la solicitud de vacaciones
 router.post('/vacaciones', async (req, res) => {
-  const { cod_emp, FechaInicio, FechaFin, Estado, cod_supervisor, cod_RRHH } = req.body;
+  const { cod_emp, fechaInicio, fechaFin, fechaRetorno, tipoConfirmacion } = req.body;
 
   console.log('Request POST received for /vacaciones');
+  console.log('cod_emp:', cod_emp);
+  console.log('fechaInicio:', fechaInicio);
+  console.log('fechaFin:', fechaFin);
+  console.log('fechaRetorno:', fechaRetorno);
+  console.log('tipoConfirmacion:', tipoConfirmacion);
 
   try {
     const pool = await getConnection();
     await pool.request()
       .input('cod_emp', sql.Char, cod_emp)
-      .input('FechaInicio', sql.Date, FechaInicio)
-      .input('FechaFin', sql.Date, FechaFin)
-      .input('Estado', sql.VarChar, Estado)
-      .input('cod_supervisor', sql.Char, cod_supervisor)
-      .input('cod_RRHH', sql.Char, cod_RRHH)
-      .query(`
-        INSERT INTO db_accessadmin.VACACIONES (cod_emp, FechaInicio, FechaFin, Estado, cod_supervisor, cod_RRHH)
-        VALUES (@cod_emp, @FechaInicio, @FechaFin, @Estado, @cod_supervisor, @cod_RRHH)
-      `);
+      .input('FechaInicio', sql.Date, fechaInicio)
+      .input('FechaFin', sql.Date, fechaFin)
+      .input('FechaRetorno', sql.Date, fechaRetorno)
+      .input('TipoResultado', sql.Int, tipoConfirmacion)
+      .execute('[db_accessadmin].[spSolicitarVacaciones]');
+
+      // Enviar correos dependiendo del tipo de confirmación
+    if (tipoConfirmacion === 1 || tipoConfirmacion === 3) {
+      // Enviar correo de solicitud de vacaciones
+      await enviarCorreoSolicitudVacaciones(cod_emp, fechaInicio, fechaFin, fechaRetorno);
+    } else if (tipoConfirmacion === 2) {
+      // Enviar correo de vacaciones y luego de permiso
+      await enviarCorreoSolicitudVacaciones(cod_emp, fechaInicio, fechaFin, fechaRetorno);
+      await enviarCorreoSolicitudPermiso(cod_emp, fechaFin, fechaRetorno,"Días de Vacaciones","Días de Vacaciones");
+    }
+
+
     res.status(201).json({ message: 'Vacaciones registradas exitosamente' });
   } catch (error) {
     console.error('Error registrando vacaciones:', error);
-    res.status(500).json({ error: 'Error registrando vacaciones' });
+    res.status(500).json({ message: 'Error registrando vacaciones' });
   }
 });
-
-
 
 // Se obtienen las vacaciones aprobadas para el supervisor para su aprobación
 router.get('/vacaciones/supervisor/:cod_supervisor', async (req, res) => {
@@ -460,6 +478,146 @@ router.put('/retornoVacaciones', async (req, res) => {
   } catch (error) {
     console.error('Error devolviendo vacaciones:', error);
     res.status(500).json({ error: 'Error devolviendo vacaciones', message: error.message});
+  }
+});
+
+router.post('/vacaciones/enviarCorreo', async (req, res) => {
+  const { cod_emp, fechaInicio, fechaFin, fechaRetorno } = req.body;
+
+  console.log('Request POST received for /vacaciones/enviarCorreo');
+  console.log('cod_emp:', cod_emp);
+  console.log('fechaInicio:', fechaInicio);
+  console.log('fechaFin:', fechaFin);
+  console.log('fechaRetorno:', fechaRetorno);
+
+  try {
+    const pool = await getConnection();
+
+    // Obtener los días de vacaciones
+    let dias = await pool.request()
+      .input('fechaInicio', sql.Date, fechaInicio)
+      .input('fechaFin', sql.Date, fechaFin)
+      .query('SELECT [dbo].[ftCalcularDiferenciaDiasVacacionesHabiles] (@fechaInicio, @fechaFin)');
+
+    // Buscar supervisores
+    let supervisores = await pool.request()
+      .input('cod_emp', sql.Char, cod_emp)
+      .input('tipo', sql.Int, 1)
+      .execute('[db_accessadmin].[spBuscarSupervisores]');
+
+    // Enviar correos a cada supervisor
+    for (const supervisor of supervisores.recordset) {
+      if (!supervisor.correo) {
+        console.error('Supervisor email is missing:', supervisor);
+        continue; // Saltar este supervisor si no tiene correo
+      }
+
+      let result = await pool.request()
+        .input('cod_emp', sql.Char, cod_emp)
+        .input('FechaInicio', sql.Date, fechaInicio)
+        .input('FechaFin', sql.Date, fechaFin)
+        .input('FechaRetorno', sql.Date, fechaRetorno)
+        .input('nombresSupervisor', sql.VarChar, supervisor.nombres)
+        .input('apellidosSupervisor', sql.VarChar, supervisor.apellidos)
+        .query('SELECT [dbo].[ftCorreoSolcitudVacaciones] (@cod_emp, @FechaInicio, @FechaFin, @FechaRetorno, @nombresSupervisor, @apellidosSupervisor) AS result');
+
+      const { result: cuerpo, trabajador } = JSON.parse(result.recordset[0].result);
+
+      // Leer el archivo correo_recibo.html
+      const templatePath = path.join(__dirname, "../templates/correo_Solicitud_vacaciones.html");
+      let htmlContent = fs.readFileSync(templatePath, 'utf8');
+      htmlContent = htmlContent.replace('${cuerpo}', cuerpo);
+
+      const mailOptions = {
+        from: 'IntranetSegurosAltamira@segurosaltamira.com',
+        to: supervisor.correo,
+        subject: `Solicitud de Vacaciones de ${trabajador}`,
+        html: htmlContent
+      };
+
+      // Enviar el correo directamente
+      const emailResult = await sendEmail(mailOptions);
+      if (!emailResult.success) {
+        return res.status(500).json({ success: false, message: emailResult.message, error: emailResult.error });
+      }
+    }
+
+    res.json({ success: true, message: 'Emails sent successfully' });
+  } catch (error) {
+    console.error('Error enviando correos:', error);
+    res.status(500).json({ success: false, message: 'Error enviando correos', error });
+  }
+});
+
+router.get('/vacaciones/periodos/id/:cod_emp', async (req, res) => {
+  const { cod_emp } = req.params;
+
+  try {
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('cod_emp', sql.VarChar, cod_emp)
+      .execute('[db_accessadmin].[spPeriodosVacaciones]');
+    res.json(result.recordset);
+  } catch (error) {
+    console.error('Error Calculando:', error);
+    res.status(500).json({ error: 'Error Calculando', message: error.message });
+  }
+});
+
+
+
+router.get('/vacaciones/InfoConfirmacionSolicitudVacaciones', async (req, res) => {
+  const { fechaInicio, fechaFin, fechaRetorno } = req.query;
+  console.log('Request GET received for /vacaciones/InfoConfirmacionSolicitudVacaciones');
+  
+  console.log('fechaInicio:', fechaInicio);
+  console.log('fechaRetorno:', fechaRetorno);
+  console.log('fechaFin:', fechaFin);
+  
+
+  try {
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('FechaInicio', sql.Date, fechaInicio)
+      .input('FechaFin', sql.Date, fechaFin)
+      .input('FechaRetorno', sql.Date, fechaRetorno)
+      .output('TipoResultado', sql.Int)
+      .output('Mensaje', sql.NVarChar)
+      .output('DiasADisfrutar',sql.Int)
+      .execute('[db_accessadmin].[sp_InfoConfirmacionSolicitudVacaciones]');
+
+    const tipoResultado = result.output.TipoResultado;
+    const mensaje = result.output.Mensaje;
+    const diasDisfrutar =result.output.DiasADisfrutar;
+
+    res.json({ TipoResultado: tipoResultado, Mensaje: mensaje,diasDisfrutar :diasDisfrutar });
+  } catch (error) {
+    console.error('Error trayendo el mensaje de confirmación:', error);
+    res.status(500).json({ error: 'Hubo un error al querer confirmar la solicitud de vacaciones', message: error.message });
+  }
+});
+
+router.post('/vacaciones/revisionPeriodo', async (req, res) => {
+  const {  periodos } = req.body;
+  try {
+    console.log('Request POST received for /vacaciones/revisionPeriodo');
+    console.log(periodos.join(','));
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('NumeroPeriodos',sql.Int, periodos.length)
+      .input('PERIODOS', sql.VarChar, periodos.join(',')) // Convertir la lista de periodos en una cadena separada por comas
+      .execute('db_accessadmin.spVerificarPeriodosSeleccionados');
+
+    const { STATUS, RESULTADO } = result.recordset[0];
+
+    if (STATUS === 1) {
+      res.json({ status: STATUS, resultado: RESULTADO });
+    } else {
+      res.status(400).json({ status: STATUS, resultado: RESULTADO });
+    }
+  } catch (error) {
+    console.error('Error revisando el rango de calendario:', error);
+    res.status(500).json({ error: 'Error revisando el rango de calendario' });
   }
 });
 export default router;

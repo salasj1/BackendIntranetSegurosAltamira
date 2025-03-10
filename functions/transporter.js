@@ -12,15 +12,17 @@ const transporter = nodemailer.createTransport({
     debug: false
 });
 
-// Función para enviar correo con reintentos
-export const sendMailWithRetry = async (mailOptions, retries = 3) => {
+// Función para enviar correo con reintentos y retraso exponencial
+export const sendMailWithRetry = async (mailOptions, retries = 5, delay = 2000) => {
     for (let attempt = 1; attempt <= retries; attempt++) {
         try {
-            await transporter.sendMail(mailOptions);
-            return { success: true };
+            let info = await transporter.sendMail(mailOptions);
+            return { success: true, info };
         } catch (error) {
             console.error(`Attempt ${attempt} failed:`, error);
-            if (attempt === retries) {
+            if (attempt < retries) {
+                await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, attempt - 1)));
+            } else {
                 return { success: false, error };
             }
         }
