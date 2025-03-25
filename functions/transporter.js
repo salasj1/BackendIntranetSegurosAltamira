@@ -8,8 +8,8 @@ const transporter = nodemailer.createTransport({
     tls: {
         rejectUnauthorized: false
     },
-    logger: false,
-    debug: false
+    logger: true,
+    debug: true
 });
 
 // Función para enviar correo con reintentos y retraso exponencial

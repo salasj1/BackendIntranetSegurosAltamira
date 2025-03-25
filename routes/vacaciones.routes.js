@@ -4,7 +4,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 import {sendEmail } from '../functions/EmailQueue.js';
-import { enviarCorreoSolicitudVacaciones, enviarCorreoSolicitudPermiso } from '../functions/enviocorreo.js';
+import { enviarCorreoSolicitudVacaciones, enviarCorreoSolicitudPermiso, enviarCorreoProcesarVacaciones } from '../functions/enviocorreo.js';
+import {addDays} from 'date-fns';
 const router = express.Router();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -26,7 +27,10 @@ router.get('/vacaciones/id/:cod_emp', async (req, res) => {
           VacacionID,
           FechaInicio,
           FechaFin,
-          Estado
+          FechaRetorno,
+          Estado,
+          dbo.ftCalcularDiferenciaDiasVacacionesHabiles(FechaInicio,ISNULL(FechaRetorno,FechaFin)) AS DiasDisfrutar,
+          dbo.ftCalcularDiferenciaDiasVacacionesHabiles(FechaInicio,FechaFin) AS DiasPagar
         FROM db_accessadmin.VACACIONES
         WHERE cod_emp = @cod_emp
         ORDER BY  Estado DESC, FechaInicio DESC
@@ -96,11 +100,11 @@ router.post('/vacaciones', async (req, res) => {
       // Enviar correos dependiendo del tipo de confirmación
     if (tipoConfirmacion === 1 || tipoConfirmacion === 3) {
       // Enviar correo de solicitud de vacaciones
-      await enviarCorreoSolicitudVacaciones(cod_emp, fechaInicio, fechaFin, fechaRetorno);
+      await enviarCorreoSolicitudVacaciones(cod_emp, fechaInicio, fechaFin,fechaRetorno, fechaFin);
     } else if (tipoConfirmacion === 2) {
       // Enviar correo de vacaciones y luego de permiso
-      await enviarCorreoSolicitudVacaciones(cod_emp, fechaInicio, fechaFin, fechaRetorno);
-      await enviarCorreoSolicitudPermiso(cod_emp, fechaFin, fechaRetorno,"Días de Vacaciones","Días de Vacaciones");
+      await enviarCorreoSolicitudVacaciones(cod_emp, fechaInicio,fechaFin, fechaRetorno);
+      await enviarCorreoSolicitudPermiso(cod_emp, addDays(fechaFin,1), fechaRetorno,"Días de Vacaciones","Días de Vacaciones");
     }
 
 
@@ -188,6 +192,9 @@ router.put('/vacaciones/:id/approve', async (req, res) => {
       .query('UPDATE [db_accessadmin].[VACACIONES] SET Estado = \'Aprobada\', cod_supervisor = @cod_supervisor WHERE VacacionID = @id');
 
     await transaction.commit();
+
+    // Enviar correo de procesamiento de vacaciones
+    await enviarCorreoProcesarVacaciones(id);
     res.send('Vacaciones aprobadas exitosamente');
   } catch (error) {
     console.error('Error aprobando vacaciones:', error);
@@ -238,6 +245,8 @@ router.put('/vacaciones/:id/process', async (req, res) => {
       .execute('dbo.pInsertarVacacion');
 
     await transaction.commit();
+    
+
     res.send('Vacaciones procesadas exitosamente');
   } catch (error) {
     console.error('Error procesando vacaciones:', error);
@@ -417,13 +426,14 @@ router.get('/vacaciones/fechaMaximaFin', async (req, res) => {
 });
 
 router.post('/vacaciones/revisionRangoCalendario', async (req, res) => {
-  const { fechaInicio, fechaFin, cod_emp } = req.body;
+  const { fechaInicio, fechaFin, cod_emp, tipoConfirmacion } = req.body;
   try {
     const pool = await getConnection();
     const result = await pool.request()
       .input('COD_EMP', sql.Char, cod_emp)
       .input('FEC_INI', sql.Date, fechaInicio)
       .input('FEC_FIN', sql.Date, fechaFin)
+      .input('TIPO', sql.Int, tipoConfirmacion)
       .execute('dbo.spValidarVacacion');
 
     const { STATUS, RESULTADO } = result.recordset[0];

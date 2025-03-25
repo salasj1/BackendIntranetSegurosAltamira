@@ -1,5 +1,6 @@
 import express from 'express';
 import { getConnection, sql } from '../database/connection.js'; 
+import { enviarCorreoSolicitudPermiso, enviarCorreoProcesarPermiso } from '../functions/enviocorreo.js';
 
 const router = express.Router();
 
@@ -78,7 +79,10 @@ router.post('/permisos', async (req, res) => {
       `INSERT INTO [db_accessadmin].[PERMISOS] (cod_emp, Fecha_inicio, Fecha_Fin, Titulo, Motivo, Estado, descripcion, descontable)
        VALUES (@cod_emp, @Fecha_inicio, @Fecha_Fin, @Titulo, @Motivo, 'Pendiente', @descripcion, @descontable)`
       );
-    res.status(201).send('Permiso creado exitosamente');
+
+      await enviarCorreoSolicitudPermiso(cod_emp, Fecha_inicio, Fecha_Fin, Titulo, Motivo);
+    
+      res.status(201).send('Permiso creado exitosamente');
   } catch (error) {
     console.error('Error al crear permiso:', error);
     res.status(500).send('Error al crear permiso');
@@ -151,6 +155,9 @@ router.put('/permisos/:PermisosID/approve', async (req, res) => {
     const resultado = result.output.RESULTADO;
 
     if (status === 1) {
+      // Enviar correo de procesamiento de permiso
+      await enviarCorreoProcesarPermiso(PermisosID);
+      //enviar resultado
       res.send(resultado);
     } else {
       res.status(400).send(resultado);
@@ -175,6 +182,9 @@ router.put('/permisos/:PermisosID/process', async (req, res) => {
       .input('PermisosID', sql.Int, PermisosID)
       .input('cod_RRHH', sql.Char, cod_RRHH)
       .execute('spProcesarPermiso');
+
+    
+    
 
     res.send('Permiso procesado exitosamente');
   } catch (error) {
