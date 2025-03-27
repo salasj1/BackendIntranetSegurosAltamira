@@ -79,8 +79,13 @@ router.post('/permisos', async (req, res) => {
       `INSERT INTO [db_accessadmin].[PERMISOS] (cod_emp, Fecha_inicio, Fecha_Fin, Titulo, Motivo, Estado, descripcion, descontable)
        VALUES (@cod_emp, @Fecha_inicio, @Fecha_Fin, @Titulo, @Motivo, 'Pendiente', @descripcion, @descontable)`
       );
-
-      await enviarCorreoSolicitudPermiso(cod_emp, Fecha_inicio, Fecha_Fin, Titulo, Motivo);
+      console.log('cod_emp:', cod_emp);
+      console.log('Fecha_inicio:', Fecha_inicio);
+      console.log('Fecha_Fin:', Fecha_Fin);
+      console.log('Motivo:', Motivo);
+      console.log('descripcion:', descripcion);
+      console.log('descontable:', descontable);
+      await enviarCorreoSolicitudPermiso(cod_emp, Fecha_inicio, Fecha_Fin, 'Permiso: ' + Motivo, Motivo);
     
       res.status(201).send('Permiso creado exitosamente');
   } catch (error) {
