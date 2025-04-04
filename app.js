@@ -13,6 +13,7 @@ import constancideTrabajoRouter from './routes/constanciaDeTrabajo.routes.js';
 import googleDriveRoutes from './routes/GoogleDrive.routes.js';
 import notificacionRouter from './routes/notificaciones.routes.js';
 import expedienteRouter from './routes/expediente.routes.js';
+import adminRouter from './routes/admin.routes.js';
 const app = express();
 app.use(express.json()); 
 app.use(express.urlencoded({ extended: true })); 
@@ -20,6 +21,7 @@ app.use(cors({
     origin: '*', // Permitir cualquier origen
     credentials: true
 }));
+
 app.use('/google-drive', googleDriveRoutes);
 app.use('/notificaciones', notificacionRouter);
 app.use(changepassword);
@@ -33,6 +35,7 @@ app.use(constancideTrabajoRouter);
 app.use(arc);
 app.use(vacacionesRouter);
 app.use(permisosRouter);
+app.use('/admin', adminRouter); // Rutas de administración
 
 
 export default app;

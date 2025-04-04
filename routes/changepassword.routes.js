@@ -6,10 +6,15 @@ import { encryptPassword, comparePassword } from '../functions/password.js';
 import { getConnection, sql } from '../database/connection.js';
 import { sendMailWithRetry } from '../functions/transporter.js';
 import bcrypt from 'bcrypt';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import fs from 'fs';
 
 const upload = multer();
 const router = express.Router();
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 router.post('/verify/:username', async (req, res) => {
     let { username } = req.params;
 
@@ -25,33 +30,43 @@ router.post('/verify/:username', async (req, res) => {
     }
 });
 
+
+
 router.put('/changepassword1/:cod_emp', async (req, res) => {
     let { cod_emp } = req.params;
     const { correo } = req.body;
     console.log("Modificando contraseña en el sistema con el endpoint changepassword1");
     try {
+        // Generar el código temporal
         let codigoTemporal = Array(10).fill(0).map(() => {
             const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+[]{}<>?';
             return chars.charAt(Math.floor(Math.random() * chars.length));
         }).join('');
         console.log("El codigo temporal es " + codigoTemporal);
-        const passwordEnviar = codigoTemporal;
-        const codigoTemporalEncriptado = await encryptPassword(codigoTemporal); // Usar await para resolver la promesa
+        const codigoTemporalEncriptado = await encryptPassword(codigoTemporal);
         console.log("El codigo temporal encriptado es " + codigoTemporalEncriptado);
         
+        // Guardar el código temporal en la base de datos
         const pool = await getConnection();
         await pool.request()
             .input('cod_emp', sql.Char, cod_emp)
             .input('codigoTemporal', sql.VarChar, codigoTemporalEncriptado)
             .execute('spGuardarCodigoTemporal'); 
 
+        // Leer la plantilla de correo
+        const templatePath = path.join(__dirname, "../templates/correo_Codigo_Validacion.html");
+        let htmlContent = fs.readFileSync(templatePath, 'utf8');
+        htmlContent = htmlContent.replace('${codigoTemporal}', codigoTemporal);
+
+        // Configurar las opciones del correo
         const mailOptions = {
             from: 'IntranetSegurosAltamira@segurosaltamira.com',
             to: correo,
-            subject: 'Codigo de Validación',
-            text: `Estimado,\n\n El código de validación es: ${passwordEnviar}\n\n Cabe aclarar que su contraseña pasada ya no existe en el sistema. \n\n Por favor no lo comparta con nadie.\n\n Saludos.`
+            subject: 'Código de Validación para Cambio de Contraseña',
+            html: htmlContent
         };
 
+        // Enviar el correo
         const mailResult = await sendMailWithRetry(mailOptions);
         if (mailResult.success) {
             res.json({ success: true, message: 'Se envió un correo con el código temporal para cambiar la contraseña' });

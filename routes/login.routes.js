@@ -10,6 +10,25 @@ router.post('/login', async (req, res) => {
     console.log(`Login attempt for username: ${username}`);
     try {
         console.log('Request POST received for /login');
+
+        // Verificar si es el administrador
+        const adminUsername = process.env.ADMIN_USERNAME; // Usuario del administrador
+        const adminPassword = process.env.ADMIN_PASSWORD; // Contraseña del administrador
+
+        if (username === adminUsername) {
+            if (password === adminPassword) {
+            return res.json({
+                success: true,
+                message: 'Authenticated as admin',
+                isAdmin: true,
+            });
+            } else {
+            console.log('Invalid admin password');
+            return res.status(401).json({ success: false, message: 'Contraseña Invalida' });
+            }
+        }
+
+        // Verificar usuarios normales
         const pool = await getConnection();
         const result = await pool.request()
             .input('username', sql.NVarChar, username)
@@ -18,7 +37,7 @@ router.post('/login', async (req, res) => {
                 FROM snusuarios u
                 JOIN VSNEMPLE e ON u.cod_emp COLLATE Modern_Spanish_CI_AS = e.cod_emp COLLATE Modern_Spanish_CI_AS
                 WHERE u.username = @username COLLATE Modern_Spanish_CI_AS;
-            `);     
+            `);
 
         if (result.recordset.length > 0) {
             const user = result.recordset[0];
@@ -27,19 +46,20 @@ router.post('/login', async (req, res) => {
                 res.status(401).json({ success: false, message: 'El usuario ingresado es un usuario nuevo, por favor cambiar su contraseña' });
             }
             const passwordMatch = await bcrypt.compare(password, user.password);
-            
+
             if (passwordMatch) {
-                res.json({ 
-                    success: true, 
-                    message: 'Authenticated successfully', 
-                    cod_emp: user.cod_emp, 
-                    nombre_completo: user.nombre_completo, 
+                res.json({
+                    success: true,
+                    message: 'Authenticated successfully',
+                    cod_emp: user.cod_emp,
+                    nombre_completo: user.nombre_completo,
                     des_cargo: user.des_cargo,
                     fecha_ing: user.fecha_ing,
                     des_depart: user.des_depart,
                     tipo: user.tipo,
                     RRHH: user.RRHH,
-                    email: user.email
+                    email: user.email,
+                    isAdmin: false, // No es administrador
                 });
             } else {
                 console.log('Invalid password');

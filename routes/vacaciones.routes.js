@@ -110,8 +110,7 @@ router.post('/vacaciones', async (req, res) => {
 
     res.status(201).json({ message: 'Vacaciones registradas exitosamente' });
   } catch (error) {
-    console.error('Error registrando vacaciones:', error);
-    res.status(500).json({ message: 'Error registrando vacaciones' });
+    res.status(500).json({ message: error.message || 'Error registrando vacaciones' });
   }
 });
 
