@@ -76,21 +76,25 @@ router.post('/permisos', async (req, res) => {
       .input('descripcion', sql.VarChar, descripcion)
       .input('descontable', sql.Bit, descontable)
       .query(
-      `INSERT INTO [db_accessadmin].[PERMISOS] (cod_emp, Fecha_inicio, Fecha_Fin, Titulo, Motivo, Estado, descripcion, descontable)
-       VALUES (@cod_emp, @Fecha_inicio, @Fecha_Fin, @Titulo, @Motivo, 'Pendiente', @descripcion, @descontable)`
+        `INSERT INTO [db_accessadmin].[PERMISOS] (cod_emp, Fecha_inicio, Fecha_Fin, Titulo, Motivo, Estado, descripcion, descontable)
+         VALUES (@cod_emp, @Fecha_inicio, @Fecha_Fin, @Titulo, @Motivo, 'Pendiente', @descripcion, @descontable)`
       );
-      console.log('cod_emp:', cod_emp);
-      console.log('Fecha_inicio:', Fecha_inicio);
-      console.log('Fecha_Fin:', Fecha_Fin);
-      console.log('Motivo:', Motivo);
-      console.log('descripcion:', descripcion);
-      console.log('descontable:', descontable);
+
+    let emailSuccess = true; // Variable para controlar el éxito del envío de correo
+    try {
       await enviarCorreoSolicitudPermiso(cod_emp, Fecha_inicio, Fecha_Fin, 'Permiso: ' + Motivo, Motivo);
-    
-      res.status(201).send('Permiso creado exitosamente');
+    } catch (error) {
+      console.error('Error enviando correo:', error);
+      emailSuccess = false;
+    }
+
+    res.status(201).json({
+      message: 'Permiso creado exitosamente',
+      emailError: !emailSuccess,
+    });
   } catch (error) {
     console.error('Error al crear permiso:', error);
-    res.status(500).send('Error al crear permiso');
+    res.status(500).json({ message: 'Error al crear permiso' });
   }
 });
 

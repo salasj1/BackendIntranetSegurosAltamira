@@ -97,20 +97,36 @@ router.post('/vacaciones', async (req, res) => {
       .input('TipoResultado', sql.Int, tipoConfirmacion)
       .execute('[db_accessadmin].[spSolicitarVacaciones]');
 
-      // Enviar correos dependiendo del tipo de confirmación
+    // Enviar correos dependiendo del tipo de confirmación
+    let emailSuccess = true;
     if (tipoConfirmacion === 1 || tipoConfirmacion === 3) {
-      // Enviar correo de solicitud de vacaciones
-      await enviarCorreoSolicitudVacaciones(cod_emp, fechaInicio, fechaFin,fechaRetorno, fechaFin);
-    } else if (tipoConfirmacion === 2) {
-      // Enviar correo de vacaciones y luego de permiso
-      await enviarCorreoSolicitudVacaciones(cod_emp, fechaInicio,fechaFin, fechaRetorno);
-      await enviarCorreoSolicitudPermiso(cod_emp, addDays(fechaFin,1), fechaRetorno,"Días de Vacaciones","Días de Vacaciones");
+      try {
+        await enviarCorreoSolicitudVacaciones(cod_emp, fechaInicio, fechaRetorno, fechaFin);
+      } catch (error) {
+        console.error('Error enviando correo:', error);
+        emailSuccess = false;
+      }
+    } else {
+      try {
+        await enviarCorreoSolicitudVacaciones(cod_emp, fechaInicio,fechaFin, fechaRetorno);
+        await enviarCorreoSolicitudPermiso(cod_emp, addDays(fechaFin,1), fechaRetorno,"Días de Vacaciones","Días de Vacaciones");
+      } catch (error) {
+        console.error('Error enviando correo:', error);
+        emailSuccess = false;
+      }
     }
 
-
-    res.status(201).json({ message: 'Vacaciones registradas exitosamente' });
+    res.status(201).json({
+      message: 'Vacaciones registradas exitosamente',
+      emailError: !emailSuccess,
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message || 'Error registrando vacaciones' });
+    console.error('Error registrando vacaciones:', error);
+    if (!res.headersSent) {
+      res.status(500).json({
+        message: error.message || 'Error registrando vacaciones',
+      });
+    }
   }
 });
 

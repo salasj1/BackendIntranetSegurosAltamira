@@ -5,6 +5,7 @@ import { buscarUsuario } from '../functions/usuario.js';
 import { encryptPassword, comparePassword } from '../functions/password.js';
 import { getConnection, sql } from '../database/connection.js';
 import { sendMailWithRetry } from '../functions/transporter.js';
+import { enviarReporteCorreo } from '../functions/reporteEnvioCorreo.js';
 import bcrypt from 'bcrypt';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -35,7 +36,10 @@ router.post('/verify/:username', async (req, res) => {
 router.put('/changepassword1/:cod_emp', async (req, res) => {
     let { cod_emp } = req.params;
     const { correo } = req.body;
-    console.log("Modificando contraseña en el sistema con el endpoint changepassword1");
+    
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+
+    console.log(`Solicitud de cambio de contraseña desde la IP: ${ip}`);
     try {
         // Generar el código temporal
         let codigoTemporal = Array(10).fill(0).map(() => {
@@ -68,10 +72,13 @@ router.put('/changepassword1/:cod_emp', async (req, res) => {
 
         // Enviar el correo
         const mailResult = await sendMailWithRetry(mailOptions);
+        
+        await enviarReporteCorreo(cod_emp, ip, 'Cambio de contraseña', mailResult.success, mailResult.fecha);
+
         if (mailResult.success) {
             res.json({ success: true, message: 'Se envió un correo con el código temporal para cambiar la contraseña' });
         } else {
-            res.status(500).json({ success: false, message: 'Error al enviar el correo', error: mailResult.error });
+            res.status(500).json({ success: false, message: 'Error al enviar el correo. Refresque la página e intentelo de nuevo', error: mailResult.error });
         }
     } catch (error) {
         console.error('Error del servidor:', error);
