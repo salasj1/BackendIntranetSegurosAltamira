@@ -6,7 +6,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 import { sendMailWithRetry } from '../functions/transporter.js';
-
+import { enviarReporteCorreo } from '../functions/reporteEnvioCorreo.js';
 const router = express.Router();
 const upload = multer();
 
@@ -96,6 +96,7 @@ router.post('/send-prestaciones', upload.single('pdf'), async (req, res) => {
 router.post('/send-prestaciones-secundario', upload.single('pdf'), async (req, res) => {
     const { cod_emp, correo_secundario } = req.body;
     const pdfBuffer = req.file.buffer;
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
     if (!cod_emp){
         return res.status(400).json({ success: false, message: 'Código de empleado no proporcionado' });
     }
@@ -139,6 +140,8 @@ router.post('/send-prestaciones-secundario', upload.single('pdf'), async (req, r
 
         // Enviar el correo con reintentos
         const resultMail = await sendMailWithRetry(mailOptions);
+
+        await enviarReporteCorreo(cod_emp, ip, 'Prestaciones', resultMail.success, resultMail.fecha);
 
         if (resultMail.success) {
             res.json({ success: true, message: 'Correo enviado', info: resultMail.info });

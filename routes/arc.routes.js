@@ -6,7 +6,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 import { sendMailWithRetry } from '../functions/transporter.js';
-
+import { enviarReporteCorreo } from '../functions/reporteEnvioCorreo.js';
 const router = express.Router();
 const upload = multer();
 
@@ -92,7 +92,7 @@ router.post('/send-arc', upload.single('pdf'), async (req, res) => {
 router.post('/send-arc-secundario', upload.single('pdf'), async (req, res) => {
     const { cod_emp, correo_secundario, fecha } = req.body;
     const pdfBuffer = req.file.buffer;
-
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
     console.log(`Request received to send ARC email to secondary email: cod_emp=${cod_emp}, correo_secundario=${correo_secundario}, fecha=${fecha}`);
     
     try {
@@ -142,6 +142,8 @@ router.post('/send-arc-secundario', upload.single('pdf'), async (req, res) => {
         };
 
         const resultMail = await sendMailWithRetry(mailOptions);
+
+        await enviarReporteCorreo(cod_emp, ip, 'ARC', resultMail.success, resultMail.fecha);
 
         if (resultMail.success) {
             res.json({ success: true, message: 'Email sent successfully' });

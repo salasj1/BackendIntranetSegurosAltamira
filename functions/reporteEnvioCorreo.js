@@ -1,13 +1,21 @@
 import { getConnection, sql } from '../database/connection.js';
-export async function enviarReporteCorreo(cod_emp, ip, accion, statusLogrado,fecha) {
+import { parseISO } from 'date-fns';
+
+export async function enviarReporteCorreo(cod_emp, ip, accion, statusLogrado, fecha) {
+    console.clear();
+    console.log("fecha: ", fecha);
+
     try {
         const pool = await getConnection();
         console.log("Conectado a la base de datos para enviar el reporte de correo");
-        console.log("IP", ip);
-        /* const query = `
-            INSERT INTO logs (cod_emp, ip, accion, status, fecha)
-            VALUES (@cod_emp, @ip, @accion, @status, @fecha)
+
+        const query = `
+            INSERT INTO [db_accessadmin].[LOGSCORREOS] ([Cod_emp],[ip],[accion],[Fecha],[Status])
+            VALUES (@cod_emp, @ip, @accion, @fecha, @status)
         `;
+
+        // Convertir la fecha a un objeto Date válido
+        const fechaValida = parseISO(fecha);
 
         // Ejecutar la consulta en la base de datos
         await pool.request()
@@ -15,8 +23,8 @@ export async function enviarReporteCorreo(cod_emp, ip, accion, statusLogrado,fec
             .input('ip', sql.VarChar, ip)
             .input('accion', sql.VarChar, accion)
             .input('status', sql.VarChar, statusLogrado ? 'Logrado' : 'No Logrado')
-            .input('fecha', sql.DateTime, fecha)
-            .query(query); */
+            .input('fecha', sql.DateTime2, fechaValida) 
+            .query(query);
 
         console.log('Reporte enviado correctamente a la base de datos.');
     } catch (error) {

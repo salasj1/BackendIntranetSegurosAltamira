@@ -10,7 +10,7 @@ import { PDFDocument } from 'pdf-lib';
 import archiver from 'archiver';
 import sharp from 'sharp';
 import { sendMailWithRetry } from '../functions/transporter.js';
-
+import { enviarReporteCorreo } from '../functions/reporteEnvioCorreo.js';
 const router = express.Router();
 const upload = multer();
 
@@ -93,7 +93,7 @@ const createZip = async (pdfBuffer, filename) => {
 router.post('/send-constancia-trabajo', upload.single('pdf'), async (req, res) => {
     const { cod_emp, correo, fecha } = req.body;
     const pdfBuffer = req.file.buffer;
-
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
     console.log(`Request received to send ARC email to secondary email: cod_emp=${cod_emp}, correo=${correo}, fecha=${fecha}`);
     
     try {
@@ -139,7 +139,7 @@ router.post('/send-constancia-trabajo', upload.single('pdf'), async (req, res) =
         };
 
         const resultMail = await sendMailWithRetry(mailOptions);
-
+        await enviarReporteCorreo(cod_emp, ip, 'Constancia de trabajo', resultMail.success, resultMail.fecha);
         if (resultMail.success) {
             res.json({ success: true, message: 'Email sent successfully' });
         } else {

@@ -10,7 +10,7 @@ import bcrypt from 'bcrypt';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
-
+import { format } from 'date-fns-tz';
 const upload = multer();
 const router = express.Router();
 
@@ -45,7 +45,7 @@ router.put('/changepassword1/:cod_emp', async (req, res) => {
         let codigoTemporal = Array(10).fill(0).map(() => {
             const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+[]{}<>?';
             return chars.charAt(Math.floor(Math.random() * chars.length));
-        }).join('');
+        }).join('').replace(/\s/g, '').slice(0, 10);
         console.log("El codigo temporal es " + codigoTemporal);
         const codigoTemporalEncriptado = await encryptPassword(codigoTemporal);
         console.log("El codigo temporal encriptado es " + codigoTemporalEncriptado);

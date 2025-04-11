@@ -6,7 +6,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 import { sendMailWithRetry } from '../functions/transporter.js';
-
+import { enviarReporteCorreo } from '../functions/reporteEnvioCorreo.js';
 const router = express.Router();
 const upload = multer(); // Middleware para manejar archivos
 
@@ -120,7 +120,7 @@ router.post('/send-recibo', upload.single('pdf'), async (req, res) => {
 router.post('/send-recibo-secundario', upload.single('pdf'), async (req, res) => {
     const { reci_num, cod_emp, correo_secundario, fecha } = req.body;
     const pdfBuffer = req.file.buffer;
-
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
     console.log(`Request POST received to send recibo to secondary email: reci_num=${reci_num}, cod_emp=${cod_emp}, correo_secundario=${correo_secundario}`);
     try {
         const pool = await getConnection();
@@ -169,6 +169,8 @@ router.post('/send-recibo-secundario', upload.single('pdf'), async (req, res) =>
 
         // Enviar el correo con reintentos
         const resultMail = await sendMailWithRetry(mailOptions);
+
+        await enviarReporteCorreo(cod_emp, ip, 'Recibo de Pago', resultMail.success, resultMail.fecha);
 
         if (resultMail.success) {
             res.json({ success: true, message: 'Correo enviado', info: resultMail.info });
