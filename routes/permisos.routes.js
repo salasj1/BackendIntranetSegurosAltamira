@@ -1,6 +1,8 @@
 import express from 'express';
 import { getConnection, sql } from '../database/connection.js'; 
 import { enviarCorreoSolicitudPermiso, enviarCorreoProcesarPermiso } from '../functions/enviocorreo.js';
+import { enviarReporteCorreo } from '../functions/reporteEnvioCorreo.js';
+import { format } from 'date-fns-tz';
 
 const router = express.Router();
 
@@ -149,7 +151,7 @@ router.get('/permisos/notificacion/RRHH/:cod_supervisor', async (req, res) => {
 router.put('/permisos/:PermisosID/approve', async (req, res) => {
   const { PermisosID } = req.params;
   const { cod_supervisor } = req.body;
-
+  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
   console.log('Request PUT received for /permisos/:PermisosID/approve');
   try {
     const pool = await getConnection();
@@ -162,15 +164,24 @@ router.put('/permisos/:PermisosID/approve', async (req, res) => {
 
     const status = result.output.STATUS;
     const resultado = result.output.RESULTADO;
-
+    let emailSuccess = true;
     if (status === 1) {
+      
+      
       // Enviar correo de procesamiento de permiso
-      await enviarCorreoProcesarPermiso(PermisosID);
-      //enviar resultado
+      try{
+        await enviarCorreoProcesarPermiso(id);
+      }catch(error){
+        emailSuccess = false;
+      }
+      //enviar resultado  
       res.send(resultado);
+      
+      await enviarReporteCorreo(cod_supervisor, ip, 'Procesar Permisos', emailSuccess, format(new Date(), "yyyy-MM-dd'T'HH:mm:ss", { timeZone: 'America/Caracas' })) ;
     } else {
       res.status(400).send(resultado);
     }
+    
   } catch (error) {
     console.error('Error al aprobar permiso:', error);
     res.status(500).send('Error al aprobar permiso');

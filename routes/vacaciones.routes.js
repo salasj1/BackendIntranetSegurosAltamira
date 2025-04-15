@@ -6,6 +6,9 @@ import fs from 'fs';
 import {sendEmail } from '../functions/EmailQueue.js';
 import { enviarCorreoSolicitudVacaciones, enviarCorreoSolicitudPermiso, enviarCorreoProcesarVacaciones } from '../functions/enviocorreo.js';
 import {addDays} from 'date-fns';
+import { enviarReporteCorreo } from '../functions/reporteEnvioCorreo.js';
+import { format } from 'date-fns-tz';
+import e from 'express';
 const router = express.Router();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -38,7 +41,7 @@ router.get('/vacaciones/id/:cod_emp', async (req, res) => {
     res.json(result.recordset);
   } catch (error) {
     console.error('Error fetching vacaciones:', error);
-    res.status(500).json({ error: 'Error fetching vacaciones' });
+    res.status(500).json({ error: error.message || 'Error fetching vacaciones' });
   }
 });
 
@@ -79,7 +82,7 @@ router.get('/vacaciones/vacacionesProcesadas/:cod_emp', async (req, res) => {
 // Modificación del endpoint existente para la inserción de la solicitud de vacaciones
 router.post('/vacaciones', async (req, res) => {
   const { cod_emp, fechaInicio, fechaFin, fechaRetorno, tipoConfirmacion } = req.body;
-
+  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
   console.log('Request POST received for /vacaciones');
   console.log('cod_emp:', cod_emp);
   console.log('fechaInicio:', fechaInicio);
@@ -115,18 +118,14 @@ router.post('/vacaciones', async (req, res) => {
         emailSuccess = false;
       }
     }
-
+    await enviarReporteCorreo(cod_emp, ip, 'Solicitud de Vacaciones', emailSuccess, format(new Date(), "yyyy-MM-dd'T'HH:mm:ss", { timeZone: 'America/Caracas' })) ;
     res.status(201).json({
       message: 'Vacaciones registradas exitosamente',
       emailError: !emailSuccess,
     });
   } catch (error) {
     console.error('Error registrando vacaciones:', error);
-    if (!res.headersSent) {
-      res.status(500).json({
-        message: error.message || 'Error registrando vacaciones',
-      });
-    }
+    res.status(500).json({ message: error.message || 'Error registrando vacaciones' });
   }
 });
 
@@ -177,7 +176,7 @@ router.put('/vacaciones/:id', async (req, res) => {
 router.put('/vacaciones/:id/approve', async (req, res) => {
   const { id } = req.params;
   const { cod_supervisor } = req.body;
-
+  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
   console.log('Request PUT received for /vacaciones/:id/approve');
 
   try {
@@ -207,9 +206,16 @@ router.put('/vacaciones/:id/approve', async (req, res) => {
       .query('UPDATE [db_accessadmin].[VACACIONES] SET Estado = \'Aprobada\', cod_supervisor = @cod_supervisor WHERE VacacionID = @id');
 
     await transaction.commit();
+    
+      // Enviar correo de procesamiento de vacaciones
+    let emailSuccess = true;
+    try{
+      await enviarCorreoProcesarVacaciones(id);
+    }catch(error){
+       emailSuccess = false;
+    }
+    await enviarReporteCorreo(cod_supervisor, ip, 'Procesar Vacaciones', emailSuccess, format(new Date(), "yyyy-MM-dd'T'HH:mm:ss", { timeZone: 'America/Caracas' })) ;
 
-    // Enviar correo de procesamiento de vacaciones
-    await enviarCorreoProcesarVacaciones(id);
     res.send('Vacaciones aprobadas exitosamente');
   } catch (error) {
     console.error('Error aprobando vacaciones:', error);
