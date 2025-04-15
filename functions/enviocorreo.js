@@ -105,7 +105,7 @@ export async function enviarCorreoProcesarVacaciones(VacacionID) {
 
     const mailOptions = {
       from: 'IntranetSegurosAltamira@segurosaltamira.com',
-      to: 'alejandro.salas@segurosaltamira.com',
+      to: 'capitalhumano@segurosaltamira.com',
       subject: `Procesar Vacaciones de ${trabajador}`,
       html: htmlContent
     };
@@ -138,7 +138,7 @@ export async function enviarCorreoProcesarPermiso(PermisoID) {
 
     const mailOptions = {
       from: 'IntranetSegurosAltamira@segurosaltamira.com',
-      to: 'alejandro.salas@segurosaltamira.com',
+      to: 'capitalhumano@segurosaltamira.com',
       subject: `Procesar Permiso de ${trabajador}`,
       html: htmlContent
     };
