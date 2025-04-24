@@ -60,7 +60,7 @@ async function enviarCorreo(cod_emp, fechaInicio, fechaFin, fechaRetorno, tipo, 
       htmlContent = htmlContent.replace('${cuerpo}', cuerpo);
 
       const mailOptions = {
-        from: 'IntranetSegurosAltamira@segurosaltamira.com',
+        from: '"Intranet Seguros Altamira" <IntranetSegurosAltamira@segurosaltamira.com>',
         to: destinatario || supervisor.correo,
         subject: `${subjectPrefix} de ${trabajador}`,
         html: htmlContent
@@ -104,7 +104,7 @@ export async function enviarCorreoProcesarVacaciones(VacacionID) {
     htmlContent = htmlContent.replace('${cuerpo}', cuerpo);
 
     const mailOptions = {
-      from: 'IntranetSegurosAltamira@segurosaltamira.com',
+      from: '"Intranet Seguros Altamira" <IntranetSegurosAltamira@segurosaltamira.com>',
       to: 'capitalhumano@segurosaltamira.com',
       subject: `Procesar Vacaciones de ${trabajador}`,
       html: htmlContent
@@ -137,7 +137,7 @@ export async function enviarCorreoProcesarPermiso(PermisoID) {
     htmlContent = htmlContent.replace('${cuerpo}', cuerpo);
 
     const mailOptions = {
-      from: 'IntranetSegurosAltamira@segurosaltamira.com',
+      from: '"Intranet Seguros Altamira" <IntranetSegurosAltamira@segurosaltamira.com>',
       to: 'capitalhumano@segurosaltamira.com',
       subject: `Procesar Permiso de ${trabajador}`,
       html: htmlContent

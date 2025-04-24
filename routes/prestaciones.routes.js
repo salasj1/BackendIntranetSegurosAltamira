@@ -124,7 +124,7 @@ router.post('/send-prestaciones-secundario', upload.single('pdf'), async (req, r
         htmlContent = htmlContent.replace('${nombre_empleado}', nombre_empleado);
 
         const mailOptions = {
-            from: 'IntranetSegurosAltamira@segurosaltamira.com',
+            from: '"Intranet Seguros Altamira" <IntranetSegurosAltamira@segurosaltamira.com>',
             to: correo_secundario,
             subject: `Adjunto de Movimientos de Prestaciones Sociales ${nombre_empleado}`,
             text: `Estimado(a) ${nombre_empleado},\n\nEn el presente se le anexa su movimiento de prestaciones sociales. Quedamos a sus ordenes.\n\nDepartamento de Nómina.`,

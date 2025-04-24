@@ -154,7 +154,7 @@ router.post('/send-recibo-secundario', upload.single('pdf'), async (req, res) =>
         htmlContent = htmlContent.replace('${cuerpo}',cuerpo);
 
         const mailOptions = {
-            from: 'IntranetSegurosAltamira@segurosaltamira.com',
+            from: '"Intranet Seguros Altamira" <IntranetSegurosAltamira@segurosaltamira.com>',
             to: correo_secundario,
             subject: `Adjunto de Recibo de Nomina ${fecha} ${nombre_empleado}`,
             html: htmlContent,

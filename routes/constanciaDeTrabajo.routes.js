@@ -125,7 +125,7 @@ router.post('/send-constancia-trabajo', upload.single('pdf'), async (req, res) =
         htmlContent = htmlContent.replace('${fecha}', fecha);
 
         const mailOptions = {
-            from: 'IntranetSegurosAltamira@segurosaltamira.com',
+            from: '"Intranet Seguros Altamira" <IntranetSegurosAltamira@segurosaltamira.com>',
             to: correo,
             subject: `Adjunto de Constancia de Trabajo ${fecha} ${nombre_empleado}`,
             html: htmlContent,

@@ -128,7 +128,7 @@ router.post('/send-arc-secundario', upload.single('pdf'), async (req, res) => {
 /*         htmlContent = htmlContent.replace('${cuerpo}',cuerpo);
  */
         const mailOptions = {
-            from: 'IntranetSegurosAltamira@segurosaltamira.com',
+            from: '"Intranet Seguros Altamira" <IntranetSegurosAltamira@segurosaltamira.com>',
             to: correo_secundario,
             subject: `Adjunto de Comprobante de Agente de Retención (ARC) ${fecha} ${nombre_empleado}`,
             html: htmlContent,
