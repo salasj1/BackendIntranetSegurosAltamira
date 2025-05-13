@@ -11,6 +11,7 @@ router.get('/empleados', async (req, res) => {
     const result = await pool.request().query(`
       SELECT DISTINCT
         V.cod_emp,
+        V.ci as cedula,
         V.nombres,
         V.apellidos,
         V.des_depart,
@@ -49,15 +50,16 @@ router.get('/empleados/control', async (req, res) => {
   try {
     const pool = await getConnection();
     const result = await pool.request().query(`
-      CREATE TABLE #TIPOS_SUP (tipo int, nombre varchar(max))
+      CREATE TABLE #TIPOS_SUP (tipo varchar(max), nombre varchar(max))
       insert #TIPOS_SUP
       EXEC spCargarTipoSupervision
 
       SELECT 
+      A.ID_SUPERVISION,
       E.cod_emp,
       E.ci as cedula_empleado,
       E.nombres AS nombres_empleado,
-      E.apellidos AS apellidos_empleado,
+      E.apellidos AS apellidos_empleado, 
       S.cod_emp AS cod_supervisor,
       S.ci AS cedula_supervisor,
       S.nombres AS nombres_supervisor,
@@ -254,6 +256,61 @@ router.get('/empleados/tipos-supervision', async (req, res) => {
   } catch (error) {
     console.error('Error cargando tipos de supervisión:', error);
     res.status(500).json({ error: 'Error cargando tipos de supervisión' });
+  }
+});
+
+router.put('/empleados/supervision/supervisor', async (req, res) => {
+  const { ID_SUPERVISION, cod_emp } = req.body; // `cod_emp` es una lista de supervisores
+  try {
+    const pool = await getConnection();
+    console.log('supervisor:', cod_emp); // Verifica el contenido de `cod_emp`
+    // Convertir la lista de supervisores en una cadena separada por comas
+    if (!cod_emp) {
+      return res.status(400).json({ error: 'cod_emp is required' });
+    }
+    const supervisoresCsv = Array.isArray(cod_emp) ? cod_emp.join(',') : String(cod_emp).split(',').join(',');
+    console.log('supervisoresCsv:', supervisoresCsv); // Verifica el contenido de `supervisoresCsv`
+
+    await pool.request()
+      .input('ID_SUPERVISION', sql.Int, ID_SUPERVISION)
+      .input('Supervisores', sql.NVarChar, supervisoresCsv) // Pasar la cadena CSV
+      .execute('spTransferirSupervision'); // Llama al procedimiento almacenado
+
+    res.status(200).send('Supervisores actualizados correctamente');
+  } catch (error) {
+    console.error('Error al actualizar supervisores:', error);
+    res.status(500).json({ error: 'Error al actualizar supervisores' });
+  }
+});
+
+router.put('/empleados/supervision/cambiar-supervisor', async (req, res) => {
+  const { ID_SUPERVISION, cod_emp } = req.body;
+  if (!ID_SUPERVISION || !cod_emp) {
+    return res.status(400).json({ error: 'ID_SUPERVISION y cod_emp son requeridos' });
+  }
+  try {
+    const pool = await getConnection();
+    const idsCsv = Array.isArray(ID_SUPERVISION) ? ID_SUPERVISION.join(',') : String(ID_SUPERVISION);
+    const supervisoresCsv = Array.isArray(cod_emp) ? cod_emp.join(',') : String(cod_emp);
+
+    const result = await pool.request()
+      .input('IDS', sql.NVarChar, idsCsv)
+      .input('SUPERVISORES', sql.NVarChar, supervisoresCsv)
+      .output('Status', sql.Int)
+      .output('Result', sql.NVarChar(200))
+      .execute('spTransferirSupervisionesMasiva');
+
+    const status = result.output.Status;
+    const message = result.output.Result;
+
+    if (status && status !== 0) {
+      return res.status(400).json({ error: message, status });
+    }
+
+    res.status(200).json({ message, status });
+  } catch (error) {
+    console.error('Error al cambiar supervisores:', error);
+    res.status(500).json({ error: 'Error al cambiar supervisores' });
   }
 });
 

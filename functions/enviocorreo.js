@@ -81,12 +81,12 @@ async function enviarCorreo(cod_emp, fechaInicio, fechaFin, fechaRetorno, tipo, 
 
 export async function enviarCorreoSolicitudVacaciones(cod_emp, fechaInicio, fechaRetorno, fechaFin) {
   const templatePath = path.join(__dirname, "../templates/correo_Solicitud_vacaciones.html");
-  await enviarCorreo(cod_emp, fechaInicio, fechaFin, fechaRetorno, 1, templatePath, 'Solicitud de Vacaciones');
+  await enviarCorreo(cod_emp, fechaInicio, fechaFin, fechaRetorno, 1, templatePath, 'Solicitud de Aprobación de Vacaciones');
 }
 
 export async function enviarCorreoSolicitudPermiso(cod_emp, fechaInicio, fechaFin, Titulo, Motivo) {
   const templatePath = path.join(__dirname, "../templates/correo_Solicitud_Permisos.html");
-  await enviarCorreo(cod_emp, fechaInicio, fechaFin, null, 2, templatePath, 'Solicitud de Permiso', Titulo, Motivo);
+  await enviarCorreo(cod_emp, fechaInicio, fechaFin, null, 2, templatePath, 'Solicitud de Aprobación de Permiso', Titulo, Motivo);
 }
 
 export async function enviarCorreoProcesarVacaciones(VacacionID) {

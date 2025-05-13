@@ -67,9 +67,10 @@ router.get('/permisos/supervisor/:cod_supervisor', async (req, res) => {
 router.post('/permisos', async (req, res) => {
   const { cod_emp, Fecha_inicio, Fecha_Fin, Titulo, Motivo, descripcion, descontable } = req.body;
   console.log('Request POST received for /permisos');
+
   try {
     const pool = await getConnection();
-    await pool.request()
+    const result = await pool.request()
       .input('cod_emp', sql.Char, cod_emp)
       .input('Fecha_inicio', sql.Date, Fecha_inicio)
       .input('Fecha_Fin', sql.Date, Fecha_Fin)
@@ -77,12 +78,21 @@ router.post('/permisos', async (req, res) => {
       .input('Motivo', sql.VarChar, Motivo)
       .input('descripcion', sql.VarChar, descripcion)
       .input('descontable', sql.Bit, descontable)
-      .query(
-        `INSERT INTO [db_accessadmin].[PERMISOS] (cod_emp, Fecha_inicio, Fecha_Fin, Titulo, Motivo, Estado, descripcion, descontable)
-         VALUES (@cod_emp, @Fecha_inicio, @Fecha_Fin, @Titulo, @Motivo, 'Pendiente', @descripcion, @descontable)`
-      );
+      .output('STATUS', sql.Int)
+      .output('Mensaje', sql.NVarChar)
+      .execute('spSolicitarPermisos');
 
-    let emailSuccess = true; // Variable para controlar el éxito del envío de correo
+    const status = result.output.STATUS;
+    const mensaje = result.output.Mensaje;
+
+    console.log('Resultado del procedimiento:', { status, mensaje });
+
+    if (status !== 1) {
+      return res.status(400).json({ status, message: mensaje });
+    }
+
+    // Intentar enviar el correo
+    let emailSuccess = true;
     try {
       await enviarCorreoSolicitudPermiso(cod_emp, Fecha_inicio, Fecha_Fin, 'Permiso: ' + Motivo, Motivo);
     } catch (error) {
@@ -91,12 +101,12 @@ router.post('/permisos', async (req, res) => {
     }
 
     res.status(201).json({
-      message: 'Permiso creado exitosamente',
+      message: mensaje,
       emailError: !emailSuccess,
     });
   } catch (error) {
     console.error('Error al crear permiso:', error);
-    res.status(500).json({ message: 'Error al crear permiso' });
+    res.status(500).json({ status: 4, message: 'Error al crear permiso' });
   }
 });
 
@@ -165,21 +175,22 @@ router.put('/permisos/:PermisosID/approve', async (req, res) => {
     const status = result.output.STATUS;
     const resultado = result.output.RESULTADO;
     let emailSuccess = true;
+    console.log('Resultado del procedimiento:', { status, resultado });
     if (status === 1) {
       
       
       // Enviar correo de procesamiento de permiso
       try{
-        await enviarCorreoProcesarPermiso(id);
+        await enviarCorreoProcesarPermiso(PermisosID);
       }catch(error){
         emailSuccess = false;
       }
       //enviar resultado  
       res.send(resultado);
       
-      await enviarReporteCorreo(cod_supervisor, ip, 'Procesar Permisos', emailSuccess, format(new Date(), "yyyy-MM-dd'T'HH:mm:ss", { timeZone: 'America/Caracas' })) ;
+      await enviarReporteCorreo(cod_supervisor, ip, 'Solicitud para Procesar Permisos', emailSuccess, format(new Date(), "yyyy-MM-dd'T'HH:mm:ss", { timeZone: 'America/Caracas' })) ;
     } else {
-      res.status(400).send(resultado);
+      res.status(400).send({ message: resultado });
     }
     
   } catch (error) {
@@ -201,12 +212,17 @@ router.put('/permisos/:PermisosID/process', async (req, res) => {
     const result = await pool.request()
       .input('PermisosID', sql.Int, PermisosID)
       .input('cod_RRHH', sql.Char, cod_RRHH)
+      .output('STATUS', sql.Int) 
+      .output('RESULTADO', sql.VarChar)
       .execute('spProcesarPermiso');
 
-    
-    
-
-    res.send('Permiso procesado exitosamente');
+      const status = result.output.STATUS;
+      const resultado = result.output.RESULTADO;
+      if (status !== 1) {
+        res.status(400).send({ message: resultado });
+        return;
+      }
+      res.send('Permiso procesado exitosamente');
   } catch (error) {
     console.error('Error al procesar permiso:', error);
     res.status(500).send(error?.message);
@@ -399,6 +415,21 @@ router.post('/permisos/enviarCorreo', async (req, res) => {
   } catch (error) {
     console.error('Error enviando correos:', error);
     res.status(500).json({ success: false, message: 'Error enviando correos', error });
+  }
+});
+
+router.get('/permisos/DiasVacacionesNoDisfrutados/:cod_emp', async (req, res) => {
+  const { cod_emp } = req.params;
+  console.log('Request GET received for /permisos/DiasVacacionesNoDisfrutados/:cod_emp');
+  try {
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('cod_emp', sql.Char, cod_emp)
+      .query('SELECT dbo.ftCalcularVacacionesNoDisfrutados(@cod_emp) AS DiasVacasPendientes');
+    res.json(result.recordset);
+  } catch (error) {
+    console.error('Error al obtener permisos:', error);
+    res.status(500).send('Error al obtener permisos');
   }
 });
 
