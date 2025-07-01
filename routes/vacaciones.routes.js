@@ -16,28 +16,12 @@ const __dirname = path.dirname(__filename);
 // Se obtienen las vacaciones de un empleado
 router.get('/vacaciones/id/:cod_emp', async (req, res) => {
   const { cod_emp } = req.params;
-
-  console.log('Request GET received for /vacaciones/id/:cod_emp');
-  console.log('cod_emp: ', cod_emp);
   try {
-
     const pool = await getConnection();
     pool.requestTimeout = 30000;
     const result = await pool.request()
       .input('cod_emp', sql.Char, cod_emp)
-      .query(`
-        SELECT 
-          VacacionID,
-          FechaInicio,
-          FechaFin,
-          FechaRetorno,
-          Estado,
-          dbo.ftCalcularDiferenciaDiasVacacionesHabiles(FechaInicio,ISNULL(FechaRetorno,FechaFin)) AS DiasDisfrutar,
-          dbo.ftCalcularDiferenciaDiasVacacionesHabiles(FechaInicio,FechaFin) AS DiasPagar
-        FROM db_accessadmin.VACACIONES
-        WHERE cod_emp = @cod_emp
-        ORDER BY  Estado DESC, FechaInicio DESC
-      `);
+      .execute('[db_accessadmin].[spMostrarVacacionesEmpleado]');
     res.json(result.recordset);
   } catch (error) {
     console.error('Error fetching vacaciones:', error);
