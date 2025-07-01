@@ -12,5 +12,11 @@
             "url": "http://localhost:3001",
             "webRoot": "${workspaceFolder}"
         }
+        /* {
+            "type": "node",
+            "request": "launch",
+            "name": "Debug driveDocumentos",
+            "program": "${workspaceFolder}/functions/driveDocumentos.js"
+          } */
     ]
 }

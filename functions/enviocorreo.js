@@ -1,7 +1,7 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
-import { sendEmail } from '../functions/EmailQueue.js';
+import { sendEmail } from '../functions/emailQueue.js';
 import { getConnection, sql } from '../database/connection.js';
 
 const __filename = fileURLToPath(import.meta.url);

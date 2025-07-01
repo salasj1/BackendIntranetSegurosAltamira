@@ -54,7 +54,7 @@ router.post('/impersonate', async (req, res) => {
                 cod_emp: user.cod_emp,
                 nombre_completo: user.nombre_completo,
                 email: user.correo_e,
-                isAdmin: false, // El usuario impersonado no es administrador
+                isAdmin: true, // El usuario impersonado no es administrador
             },
             process.env.JWT_SECRET,
             { expiresIn: '1h' }

@@ -23,6 +23,7 @@
     "date-fns-tz": "^3.2.0",
     "dotenv": "^16.4.5",
     "express": "^4.21.0",
+    "get-intrinsic": "^1.1.1",
     "googleapis": "^105.0.0",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",

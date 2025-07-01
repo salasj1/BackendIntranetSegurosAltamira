@@ -77,4 +77,137 @@ router.get('/getDatosRutas/Regreso/:cod_emp', async (req, res) => {
         res.status(500).json({ success: false, message: 'Error de conexion' });
     }
 });
+
+router.post('/SolicitarCambioDatosPersonales', async (req, res) => {
+    const { cod_emp, cedula, nombres, apellidos, rif, edocivil, email, fechaNacimiento, telefonoCelular, direccion } = req.body;
+    console.log(`Request POST received for /SolicitarCambioDatosPersonales with cod_emp: ${cod_emp}, cedula: ${cedula}, nombres: ${nombres}, apellidos: ${apellidos}, rif: ${rif}, edocivil: ${edocivil}, email: ${email}, fechaNacimiento: ${fechaNacimiento}, telefonoCelular: ${telefonoCelular}, direccion: ${direccion}`);
+
+    try {
+        const pool = await getConnection();
+        const result = await pool.request()
+            .input('cod_emp', sql.NVarChar, cod_emp)
+            .input('cedula', sql.NVarChar, cedula)
+            .input('nombres', sql.NVarChar, nombres)
+            .input('apellidos', sql.NVarChar, apellidos)
+            .input('rif', sql.NVarChar, rif)
+            .input('edocivil', sql.NVarChar, edocivil)
+            .input('email', sql.NVarChar, email)
+            .input('fechaNacimiento', sql.NVarChar, fechaNacimiento)
+            .input('telefonoCelular', sql.NVarChar, telefonoCelular)
+            .input('direccion', sql.NVarChar, direccion)
+            .execute('spSolicitarCambioDatosPersonales');
+
+        res.json({ 
+            success: true, 
+            message: 'Solicitud de cambio enviada correctamente' ,
+            cambios_realizados: result.recordset[0].cambios_realizados
+
+        });
+    } catch (error) {
+        console.error('ERROR: ' + JSON.stringify(error));
+        res.status(500).json({ success: false, message: 'Error al enviar la solicitud de cambio' });
+    }
+});
+
+router.post('/guardarRutas', async (req, res) => {
+  const { cod_emp, RutaaOficina, RutaaCasa } = req.body;
+
+  try {
+    const pool = await getConnection();
+console.log('RutasOficina',RutaaOficina)
+        console.log('RutasCasa',RutaaCasa)
+
+    await pool.request()
+
+      
+
+      .input('cod_emp', sql.Char, cod_emp)
+      .input('RutasOficina', sql.NVarChar(sql.MAX),  JSON.stringify(RutaaOficina))
+      .input('RutasCasa', sql.NVarChar(sql.MAX), JSON.stringify(RutaaCasa))
+      .execute('spGuardarRutas');
+    res.json({ success: true });
+  } catch (error) {
+    console.error('ERROR: ' + JSON.stringify(error));
+    res.status(500).json({ success: false, message: 'Error al guardar las rutas' });
+  }
+});
+
+// Endpoint para listar solicitudes de cambio de datos de un empleado
+router.get('/solicitudes-cambio/:cod_emp', async (req, res) => {
+  const { cod_emp } = req.params;
+  try {
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('cod_emp', sql.NVarChar, cod_emp)
+      .query(`
+        SELECT 
+          cod_emp, etiqueta, solicitud, status
+        FROM SOLICITUDCAMBIOEXPEDIENTE
+        WHERE cod_emp = @cod_emp
+        ORDER BY id DESC
+      `);
+    console.log(`Solicitudes de cambio para el empleado ${cod_emp}:`, result.recordset);
+    res.json(result.recordset);
+  } catch (error) {
+    console.error('Error en /expediente/solicitudes-cambio:', error);
+    res.status(500).json({ error: 'Error al obtener solicitudes de cambio' });
+  }
+});
+
+// Endpoint para obtener los datos personales del empleado desde VSNEMPLE
+router.get('/datos-personales/:cod_emp', async (req, res) => {
+  const { cod_emp } = req.params;
+  try {
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('cod_emp', sql.NVarChar, cod_emp)
+      .query(`
+        SELECT TOP 1
+          cod_emp,
+          nombres,
+          apellidos,
+          rif,
+          edo_civ,
+          correo_e,
+          fecha_nac,
+          telefono,
+          direccion,
+          ci,
+          fecha_ing,
+          des_depart AS departamento,
+          des_cargo AS cargo
+        FROM VSNEMPLE
+        WHERE cod_emp = @cod_emp
+      `);
+    if (result.recordset.length > 0) {
+      res.json({ success: true, datos: result.recordset[0] });
+    } else {
+      res.status(404).json({ success: false, message: 'No se encontraron datos personales para este empleado' });
+    }
+  } catch (error) {
+    console.error('Error en /expediente/datos-personales:', error);
+    res.status(500).json({ success: false, message: 'Error al obtener datos personales' });
+  }
+});
+
+// Endpoint para obtener las rutas del empleado 
+router.get('/rutas/:cod_emp', async (req, res) => {
+  const { cod_emp } = req.params;
+  try {
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('cod_emp', sql.NVarChar, cod_emp)
+      .query(`
+        SELECT id, cod_emp, tipo, descripcion, status
+        FROM RUTAS
+        WHERE cod_emp = @cod_emp
+        ORDER BY tipo, id
+      `);
+    res.json({ success: true, rutas: result.recordset });
+  } catch (error) {
+    console.error('Error en /expediente/rutas:', error);
+    res.status(500).json({ success: false, message: 'Error al obtener rutas' });
+  }
+});
+
 export default router;

@@ -314,4 +314,18 @@ router.put('/empleados/supervision/cambiar-supervisor', async (req, res) => {
   }
 });
 
+// Ruta para listar empleados para RRHH (solo cod_emp, nombre_completo y cedula)
+router.get('/empleados/listar', async (req, res) => {
+  try {
+    const pool = await getConnection();
+    const result = await pool.request().query(`
+      SELECT cod_emp, nombre_completo, ci as cedula FROM VSNEMPLE ORDER BY nombre_completo
+    `);
+    res.json(result.recordset);
+  } catch (error) {
+    console.error('Error en /empleados/listar:', error);
+    res.status(500).json({ error: 'Error al listar empleados' });
+  }
+});
+
 export default router;
