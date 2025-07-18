@@ -11,7 +11,7 @@ const __dirname = path.dirname(__filename);
 
 export function notificarDocumentosVencidos() {
   
-  cron.schedule('0 8 * * 5', async () => {
+  cron.schedule('0 8 * * 1', async () => {
     try {
       const pool = await getConnection();
       // Trae empleados con pendientes y los datos html desde SQL
