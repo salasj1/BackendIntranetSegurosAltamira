@@ -8,20 +8,8 @@ router.get('/empleados', async (req, res) => {
   console.log('Request GET received for /empleados');
   try {
     const pool = await getConnection();
-    const result = await pool.request().query(`
-      SELECT DISTINCT
-        V.cod_emp,
-        V.ci as cedula,
-        V.nombres,
-        V.apellidos,
-        V.des_depart,
-        V.des_cargo,
-        V.correo_e,
-        V.nombre_completo,
-        A.tlf_oficina
-        FROM VSNEMPLE V
-        LEFT JOIN SNEMPLE_AUX A ON V.cod_emp COLLATE Modern_Spanish_CI_AS = A.cod_emp COLLATE Modern_Spanish_CI_AS
-    `);
+    const result = await pool.request()
+      .execute('spObtenerEmpleados'); // Nuevo SP
     res.json(result.recordset);
   } catch (error) {
     console.error('Error fetching empleados:', error);
@@ -49,27 +37,8 @@ router.get('/empleados/control', async (req, res) => {
   console.log('Request GET received for /empleados/control');
   try {
     const pool = await getConnection();
-    const result = await pool.request().query(`
-      CREATE TABLE #TIPOS_SUP (tipo varchar(max), nombre varchar(max))
-      insert #TIPOS_SUP
-      EXEC spCargarTipoSupervision
-
-      SELECT 
-      A.ID_SUPERVISION,
-      E.cod_emp,
-      E.ci as cedula_empleado,
-      E.nombres AS nombres_empleado,
-      E.apellidos AS apellidos_empleado, 
-      S.cod_emp AS cod_supervisor,
-      S.ci AS cedula_supervisor,
-      S.nombres AS nombres_supervisor,
-      S.apellidos AS apellidos_supervisor,
-      ISNULL(T.nombre,A.Tipo) as Tipo,
-      E.Nomina
-      FROM VSNEMPLE E INNER JOIN SUPERVISION A ON E.cod_emp COLLATE Modern_Spanish_CI_AS =A.Cod_emp COLLATE Modern_Spanish_CI_AS INNER JOIN VSNEMPLE S ON S.cod_emp COLLATE Modern_Spanish_CI_AS=A.Cod_supervisor COLLATE Modern_Spanish_CI_AS
-      LEFT JOIN #TIPOS_SUP T ON A.Tipo = T.tipo
-      DROP TABLE #TIPOS_SUP
-    `);
+    const result = await pool.request()
+      .execute('spObtenerControlSupervision'); // Nuevo SP
     res.json(result.recordset);
   } catch (error) {
     console.error('Error fetching empleados detalles:', error);
@@ -199,23 +168,7 @@ router.get('/empleados/supervision', async (req, res) => {
     const result = await pool.request()
       .input('cod_emp', sql.VarChar, cod_emp)
       .input('cod_supervisor', sql.VarChar, cod_supervisor)
-      .query(`
-        SELECT 
-        S.ID_SUPERVISION,
-        A.cod_emp ,
-		    A.des_depart as departamento_empleado,
-		    A.des_cargo as  cargo_empleado,
-        A.ci As cedula_empleado,
-        A.nombre_completo AS nombre_empleado,
-        B.cod_emp AS cod_supervisor,
-        B.ci AS cedula_supervisor,
-        B.nombre_completo AS nombre_supervisor,
-        B.des_depart as departamento_supervisor,
-        B.des_cargo as cargo_supervisor,
-        S.Tipo
-        FROM VSNEMPLE A INNER JOIN SUPERVISION S ON A.cod_emp COLLATE Modern_Spanish_CI_AS = S.Cod_emp COLLATE Modern_Spanish_CI_AS INNER JOIN VSNEMPLE B ON B.cod_emp COLLATE Modern_Spanish_CI_AS = S.Cod_supervisor COLLATE Modern_Spanish_CI_AS
-        WHERE A.cod_emp = @cod_emp AND B.cod_emp = @cod_supervisor
-      `); 
+      .execute('spObtenerSupervisionEmpleado'); // Nuevo SP
     if (result.recordset.length === 0) {
       return res.status(404).json({ error: 'Supervisión no encontrada' });
     }
@@ -318,9 +271,8 @@ router.put('/empleados/supervision/cambiar-supervisor', async (req, res) => {
 router.get('/empleados/listar', async (req, res) => {
   try {
     const pool = await getConnection();
-    const result = await pool.request().query(`
-      SELECT cod_emp, nombre_completo, ci as cedula FROM VSNEMPLE ORDER BY nombre_completo
-    `);
+    const result = await pool.request()
+      .execute('spListarEmpleadosRRHH'); // Nuevo SP
     res.json(result.recordset);
   } catch (error) {
     console.error('Error en /empleados/listar:', error);
@@ -328,4 +280,22 @@ router.get('/empleados/listar', async (req, res) => {
   }
 });
 
+// Ruta para obtener el nombre completo de un empleado por cod_emp
+router.get('/empleados/nombre-completo/:cod_emp', async (req, res) => {
+  const { cod_emp } = req.params;
+  try {
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('cod_emp', sql.VarChar, cod_emp)
+      .execute('spObtenerNombreCompletoEmpleado'); // Nuevo SP
+    if (result.recordset.length > 0) {
+      res.json({ nombre_completo: result.recordset[0].nombre_completo });
+    } else {
+      res.status(404).json({ error: 'Empleado no encontrado' });
+    }
+  } catch (error) {
+    console.error('Error obteniendo nombre completo:', error);
+    res.status(500).json({ error: 'Error obteniendo nombre completo' });
+  }
+});
 export default router;

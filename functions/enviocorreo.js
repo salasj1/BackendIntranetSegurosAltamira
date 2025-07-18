@@ -154,3 +154,37 @@ export async function enviarCorreoProcesarPermiso(PermisoID) {
     throw error;
   }
 }
+
+
+export async function enviarCorreoSolicitudCambioDatos(cod_emp, cambios, nombres, apellidos) {
+  try {
+    // Buscar correo de RRHH (puedes cambiar el destinatario si lo necesitas)
+    const destinatario = 'capitalhumano@segurosaltamira.com';
+    const templatePath = path.join(__dirname, '../templates/correo_Solicitud_CambioDatos.html');
+    let htmlContent = fs.readFileSync(templatePath, 'utf8');
+    // Generar cuerpo dinámico con los cambios solicitados
+    let cuerpo = '<ul>';
+    for (const cambio of cambios) {
+      cuerpo += `<li><b>${cambio.etiqueta}:</b> ${cambio.solicitud}</li>`;
+    }
+    cuerpo += '</ul>';
+
+    htmlContent = htmlContent.replace('${cuerpo}', cuerpo);
+    htmlContent = htmlContent.replace('${nombres}', nombres);
+    htmlContent = htmlContent.replace('${apellidos}', apellidos);
+    const mailOptions = {
+      from: 'Intranet Seguros Altamira <IntranetSegurosAltamira@segurosaltamira.com>',
+      to: destinatario,
+      subject: `Solicitud de cambio de datos personales de ${cod_emp}`,
+      html: htmlContent
+    };
+    const emailResult = await sendEmail(mailOptions);
+    if (!emailResult.success) {
+      console.error('Error enviando correo de solicitud de cambio de datos:', emailResult.error);
+      throw new Error(`Error enviando correo: ${emailResult.message || 'Error desconocido'}`);
+    }
+  } catch (error) {
+    console.error('Error enviando correo de solicitud de cambio de datos:', error);
+    throw error;
+  }
+}

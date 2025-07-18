@@ -3,7 +3,7 @@ import { getConnection, sql } from '../database/connection.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
-import {sendEmail } from '../functions/EmailQueue.js';
+import {sendEmail } from '../functions/emailQueue.js';
 import { enviarCorreoSolicitudVacaciones, enviarCorreoSolicitudPermiso, enviarCorreoProcesarVacaciones } from '../functions/enviocorreo.js';
 import {addDays} from 'date-fns';
 import { enviarReporteCorreo } from '../functions/reporteEnvioCorreo.js';
@@ -185,7 +185,7 @@ router.put('/vacaciones/:id/approve', async (req, res) => {
 
     const result = await transaction.request()
       .input('id', sql.Int, id)
-      .query('SELECT Estado FROM [db_accessadmin].[VACACIONES] WHERE VacacionID = @id');
+      .execute('spObtenerEstadoVacacionPorId');
 
     if (result.recordset.length === 0) {
       await transaction.rollback();
@@ -241,7 +241,7 @@ router.put('/vacaciones/:id/process', async (req, res) => {
 
     const result = await transaction.request()
       .input('id', sql.Int, id)
-      .query('SELECT Estado FROM [db_accessadmin].[VACACIONES] WHERE VacacionID = @id');
+      .execute('spObtenerEstadoVacacionPorId');
 
     if (result.recordset.length === 0) {
       await transaction.rollback();
@@ -285,7 +285,7 @@ router.put('/vacaciones/:id/reject1', async (req, res) => {
 
     const result = await transaction.request()
       .input('id', sql.Int, id)
-      .query('SELECT Estado FROM [db_accessadmin].[VACACIONES] WHERE VacacionID = @id');
+      .execute('spObtenerEstadoVacacionPorId');
 
     if (result.recordset.length === 0) {
       await transaction.rollback();
@@ -322,7 +322,7 @@ router.put('/vacaciones/:id/reject2', async (req, res) => {
 
     const result = await transaction.request()
       .input('id', sql.Int, id)
-      .query('SELECT Estado FROM [db_accessadmin].[VACACIONES] WHERE VacacionID = @id');
+      .execute('spObtenerEstadoVacacionPorId');
 
     if (result.recordset.length === 0) {
       await transaction.rollback();

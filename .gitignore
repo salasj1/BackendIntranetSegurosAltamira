@@ -1,4 +1,5 @@
 .env
 node_modules
 JSON/GoogleDriveKey.json
+JSON/GoogleServiceKey.json
 token.json

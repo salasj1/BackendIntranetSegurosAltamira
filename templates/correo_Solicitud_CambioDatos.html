@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        .email-container {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(to right, #0e4696, #0c448e);
+            padding: 20px;
+        
+        }
+        .email-content {
+            background-color: #ffffff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+        .email-header {
+            font-size: 27px;
+            font-weight: bold;
+            color: #003391;
+            margin-bottom: 20px;
+        }
+        .email-body {
+            font-size: 16px;
+            color: #555555;
+            line-height: 1.5;
+        }
+        .email-footer {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #777777;
+        }
+        .email-image-footer {
+            display: flex;
+            width: calc(100%);
+            flex-grow: 1;
+            font-size: 14px;
+            color: #777777;
+            border-radius: 0 0 10px 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="email-content">
+            <h2 class="email-header">Solicitud de Cambio de Datos Personales</h2>
+            <div class="email-body">
+                <p>Se ha recibido una solicitud de cambio de datos personales de ${nombres} ${apellidos} con la siguiente información:</p>
+                ${cuerpo}
+                <p>Por favor, revise la información y evalúe los cambios.</p>
+            </div>
+            <div class="email-footer">
+                Intranet de Seguros Altamira.
+            </div>
+        </div>
+        <img src="https://media.licdn.com/dms/image/v2/D4E3DAQF0mlb0e_m8-Q/image-scale_191_1128/image-scale_191_1128/0/1678969137498/seguros_altamira_cover?e=2147483647&v=beta&t=oOSJm4jhoR01nmRztPezxIuPIdnn2WWJ8kt4j3tUYuE" class="email-image-footer" alt="Seguros Altamira"  style="text-align: left;">
+    </div>
+</body>
+</html>

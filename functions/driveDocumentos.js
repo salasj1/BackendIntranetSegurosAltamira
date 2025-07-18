@@ -135,7 +135,11 @@ function mostrarProgreso(actual, total) {
 (async () => {
   try {
     const authClient = await authorize();
-    const folderId = process.env.VITE_GOOGLE_DRIVE_FOLDER_ID ; // Expedientes
+    // Asegúrate de que la variable de entorno esté definida
+    const folderId = '1_M5OdOUGxk_D2Ink2-66bPQGOiqcbz8q';
+    if (!folderId) {
+      throw new Error('La variable de entorno VITE_GOOGLE_DRIVE_FOLDER_ID no está definida. Define el ID de la carpeta raíz de Expedientes.');
+    }
 
     // 1. Listar subcarpetas
     const subcarpetas = await listFoldersInFolder(authClient, folderId);
@@ -175,6 +179,9 @@ function mostrarProgreso(actual, total) {
     console.log('\nProceso completado.');
   } catch (error) {
     console.error('Error al listar documentos:', error);
+    if (error.message && error.message.includes('VITE_GOOGLE_DRIVE_FOLDER_ID')) {
+      console.error('Debes definir la variable de entorno VITE_GOOGLE_DRIVE_FOLDER_ID con el ID de la carpeta raíz de Expedientes.');
+    }
   }
 })();
 

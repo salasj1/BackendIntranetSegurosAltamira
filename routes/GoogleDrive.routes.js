@@ -51,76 +51,19 @@ router.get('/tiposDocumentos', async (req, res) => {
 });
 
 // Endpoint para crear una carpeta
-router.post('/crear-carpeta/:cod_emp', async (req, res) => {
-  const { cod_emp } = req.params;
+router.post('/importar-documentos', async (req, res) => {
   try {
-    const authClient = await authorize();
-    const folderId = await createFolder(authClient, cod_emp);
-    res.status(200).json({ success: true, folderId });
+    const resultado = await import('../utils/importarDocumentosDesdeSheet.js').then(mod => mod.importarDocumentosDesdeSheet());
+    if (!resultado.success) {
+      return res.status(400).json(resultado);
+    }
+    res.json(resultado);
   } catch (error) {
-    console.error('Error creando la carpeta:', error);
-    res.status(500).json({ success: false, error: error.message });
+    console.error('Error importando documentos a staging:', error);
+    res.status(500).json({ success: false, message: 'Error importando documentos', error: error.message });
   }
 });
-
-// Endpoint para subir un archivo
-router.post('/subir-archivo', upload.single('archivo'), async (req, res) => {
-  let { cod_emp, tipo_documento } = req.body;
-  const archivo = req.file;
-
-  if (!archivo) {
-    return res.status(400).json({ error: 'Falta el archivo' });
-  }
-  if (!cod_emp) {
-    return res.status(400).json({ error: 'Falta el parámetro cod_emp' });
-  }
-  cod_emp = cod_emp.replace(/\s+/g, '');
-  try {
-    const authClient = await authorize();
-    const drive = google.drive({ version: 'v3', auth: authClient });
-
-    // Verificar si la carpeta existe, si no, crearla
-    let folderId = await buscarCarpetaPorCodEmp(drive, cod_emp);
-    if (!folderId) {
-      folderId = await createFolder(authClient, cod_emp);
-    }
-
-    // Renombrar el archivo según el tipo de documento
-    let nombreArchivo = archivo.originalname;
-    if (tipo_documento === 'Cédula') {
-      nombreArchivo = `CEDULA_${cod_emp}.pdf`;
-    } else if (tipo_documento === 'RIF') {
-      nombreArchivo = `RIF_${cod_emp}.pdf`;
-    } else if (tipo_documento === 'Recibo') {
-      nombreArchivo = `RECIBO_DE_PAGO_${cod_emp}.pdf`;
-    }
-
-    // Convertir el buffer del archivo en un stream
-    const bufferStream = new Readable();
-    bufferStream.push(archivo.buffer);
-    bufferStream.push(null);
-
-    // Sube el archivo
-    const fileMetadata = {
-      name: nombreArchivo,
-      parents: [folderId]
-    };
-    const media = {
-      mimeType: archivo.mimetype,
-      body: bufferStream
-    };
-    const response = await drive.files.create({
-      resource: fileMetadata,
-      media: media,
-      fields: 'id'
-    });
-
-    res.status(200).json({ success: true, fileId: response.data.id });
-  } catch (error) {
-    console.error('Error subiendo el archivo:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
+ 
 
 // Función para buscar la carpeta por cod_emp
 async function buscarCarpetaPorCodEmp(drive, cod_emp) {
@@ -238,9 +181,8 @@ router.post('/subir-varios-archivos', upload.array('archivos'), async (req, res)
         const result = await pool.request()
           .input('cod_emp', sql.Char, cod_emp)
           .input('TipoDocumento', sql.NVarChar, tipo_documento)
-          .input('nombre', sql.NVarChar, nombreArchivo)
           .input('fechaEmision', sql.DateTime, fechaActual)
-          .input('Recordatorio', sql.Date, fecha_actualizacion)
+          .input('Recordatorio', sql.Date, fecha_vencimiento || null)
           .output('STATUS', sql.Int)
           .output('RESULTADO', sql.VarChar(2500))
           .execute('[db_accessadmin].[spCargarDocumento]');
@@ -352,11 +294,12 @@ router.get('/buscar-documento', async (req, res) => {
 
 // Endpoint para actualizar un archivo
 router.post('/actualizar-archivo', upload.single('archivo'), async (req, res) => {
-  const { cedula, tipo_documento, fileIdViejo, fecha_vencimiento } = req.body;
+  const { cedula, tipo_documento, fileIdViejo, fecha_vencimiento, cod_emp } = req.body;
   const archivoNuevo = req.file;
-  if (!archivoNuevo || !cedula || !tipo_documento || !fileIdViejo) {
+  if (!archivoNuevo || !cedula || !tipo_documento || !fileIdViejo || !cod_emp) {
     return res.status(400).json({ error: 'Faltan parámetros' });
   }
+  console.log('cod_emp:', cod_emp);
   try {
     const authClient = await authorize();
     const drive = google.drive({ version: 'v3', auth: authClient });
@@ -383,6 +326,20 @@ router.post('/actualizar-archivo', upload.single('archivo'), async (req, res) =>
       nombreArchivo = `${cedulaNumerica}_${tipo_documento}_${formattedDate}_${formattedFechaVencimiento}`;
     }
 
+    try {
+      const pool = await getConnection();
+      const result = await pool.request()
+        .input('cod_emp', sql.Char, cod_emp)
+        .input('TipoDocumento', sql.NVarChar, tipo_documento)
+        .input('fechaEmision', sql.DateTime, fechaActual)
+        .input('Recordatorio', sql.Date, fecha_vencimiento || null)
+        .output('STATUS', sql.Int)
+        .output('RESULTADO', sql.VarChar(2500))
+        .execute('[db_accessadmin].[spCargarDocumento]');
+    } catch (error) {
+      console.error('Error insertando el documento en la base de datos:', error);
+      throw new Error('Error insertando el documento en la base de datos');
+    }
     const bufferStream = new Readable();
     bufferStream.push(archivoNuevo.buffer);
     bufferStream.push(null);
@@ -406,6 +363,49 @@ router.post('/actualizar-archivo', upload.single('archivo'), async (req, res) =>
   } catch (error) {
     console.error('Error actualizando el archivo:', error);
     res.status(500).json({ error: error.message });
+  }
+});
+// Endpoint para obtener empleados con Cedula o Rif vencidos
+import { empleadosConDocumentosVencidos } from '../functions/driveVencimientos.js';
+
+// Nuevo endpoint: devuelve empleados con cualquier documento vencido (dinámico)
+router.get('/empleados-documentos-vencidos', async (req, res) => {
+  try {
+    const empleados = await empleadosConDocumentosVencidos();
+    // Para compatibilidad con frontend actual, aplanar los documentos vencidos si es necesario
+    // Si el frontend espera cedulaVencido/rifVencido, mantenerlos, pero ahora puede haber más tipos
+    res.status(200).json({ success: true, empleados });
+  } catch (error) {
+    console.error('Error buscando documentos vencidos:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Cambia la extensión aquí:
+import { getVencidosFromSheet } from '../functions/sheetsVencidos.js';
+
+router.get('/empleados-documentos-vencidos-sheet', async (req, res) => {
+  try {
+    const vencidos = await getVencidosFromSheet();
+    res.status(200).json({ success: true, empleados: vencidos });
+  } catch (error) {
+    console.error('Error leyendo Google Sheets:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// NUEVO ENDPOINT: Importar datos de la hoja 1 de Google Sheets a DOCUMENTOS_Staging
+router.post('/importar-documentos', async (req, res) => {
+  try {
+    const { importarDocumentosDesdeSheet } = await import('../utils/importarDocumentosDesdeSheet.js');
+    const resultado = await importarDocumentosDesdeSheet();
+    if (!resultado.success) {
+      return res.status(400).json(resultado);
+    }
+    res.json(resultado);
+  } catch (error) {
+    console.error('Error importando documentos a staging:', error);
+    res.status(500).json({ success: false, message: 'Error importando documentos', error: error.message });
   }
 });
 
