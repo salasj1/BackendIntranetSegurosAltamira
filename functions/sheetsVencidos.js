@@ -1,7 +1,7 @@
 import { google } from 'googleapis';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-
+import { getConnection } from '../database/connection.js';
 // Solución para __dirname en ES modules:
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -24,7 +24,7 @@ async function getVencidosFromSheet() {
   const secondSheetName = sheetList[1].properties.title;
 
   // 2. Leer los datos de la segunda hoja
-  const range = `${secondSheetName}!A1:F1000`;
+  const range = `${secondSheetName}`;
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
     range,
@@ -47,10 +47,18 @@ async function getVencidosFromSheet() {
   for (const row of data) {
     const cedula = row['Cédula'];
     if (!cedula) continue;
+    //necesito obtener el nombre del empleado por un sp de base de datos usando la cedula
+    const pool = await getConnection();
+    const empleadoResult = await pool.request()
+      .input('cod_emp', cedula)
+      .execute('spObtenerNombreCompletoEmpleado');
+    const empleado = (empleadoResult.recordset || [])[0];
+
     if (!empleadosMap[cedula]) {
       empleadosMap[cedula] = {
         cod_emp: cedula,
         cedula: cedula,
+        nombreCompleto: empleado ? empleado.nombre_completo : '',
         documentosVencidos: {}
       };
     }

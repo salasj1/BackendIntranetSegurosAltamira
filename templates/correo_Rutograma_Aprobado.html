@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<script
+  src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.8.5/dist/dotlottie-wc.js"
+  type="module"
+></script>
+<head>
+  <meta charset="UTF-8">
+  <title>Rutograma Aprobado</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f7faff; color: #222; }
+    .container {max-width:60em; width: 100%;border:1px solid rgb(0,0,0, 0.1); background: #fff; border-radius: 10px; margin: 24px auto; max-width: 600px; box-shadow: 0 4px 16px rgba(0,63,158,0.08);}
+    .continer2 { padding: 24px 24px 0px  }
+    .header { color: #003f9e; font-size: 1.5rem; margin-bottom: 16px; }
+    .footer { margin-top: 32px; color: #888; font-size: 0.95rem; }
+    .footer-image-wrapper {
+      position: relative;
+      width: 100%;
+      height: 100px;
+      margin-top: 8px;
+      border-radius: 0 0 10px 10px;
+      overflow: hidden;
+    }
+    .footer-image-wrapper img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      border-radius: 0 0 10px 10px;
+      object-position: center 10%;
+    }
+    .footer-image-wrapper::after {
+      content: "";
+      position: absolute;
+      left: 0; top: 0; width: 100%; height: 100%;
+      /* Degradado azul a naranja */
+/*       background: linear-gradient(90deg, rgba(0,63,158,0.7) 0%, rgba(255,140,0,0.7) 100%); */
+      pointer-events: none;
+      border-radius: 0 0 10px 10px;
+      mix-blend-mode: multiply;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse; background-color: #003f9e; border-radius: 10px 10px 0px 0px;">
+    <tr>
+        <td style="padding: 16px 0 16px 0; " align="center" >
+          <img src="https://i.ibb.co/gZ7kzbtd/logo-login-2.png" alt="logo-login-2" border="0" width="70">
+        </td>
+    </tr>
+    </table>
+    <div class="continer2">
+    <div class="header">Rutograma Aprobado</div>
+   
+      <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse;">
+      <tr style="padding: 16px 0 0 0;" align="justify">
+         ${cuerpo}
+      </tr>
+
+      <tr>
+        <td style="padding: 16px 0 0 0;" align="center">
+          <img src="https://i.ibb.co/Kp79F246/job-cv.gif" alt="Rutograma Aprobado" width="200" height="200" style="display: block;">
+        </td>
+      </tr>
+        <tr>
+        <td style="padding: 16px 0 0 0;" align="center">
+          <a href="${baseURL}/expediente/rutograma"
+            style="
+              display: inline-block;
+              background: #003f9e;
+              color: #fff !important;
+              text-decoration: none;
+              font-weight: bold;
+              font-size: 1rem;
+              padding: 12px 32px;
+              border-radius: 20px 5px 20px 5px;
+              border: none;
+              cursor: pointer;
+              font-family: Arial, sans-serif;
+              margin-top: 8px;
+            "
+            target="_blank"
+          >Ingresar Ya</a>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding: 16px 0 0 0;" align="center">
+          <div class="footer">
+            Este mensaje fue generado automáticamente por la Intranet de Seguros Altamira.<br>
+            No responda a este correo.
+          </div>
+        </td>
+      </tr>
+
+    </table>
+    </div>
+    <div class="footer-image-wrapper">
+      <img src="https://i.ibb.co/KpWwYnL0/imagen-rutas.png" alt="imagen-rutas" alt="Mapa rutograma">
+    </div>
+  </div>
+</body>
+</html>

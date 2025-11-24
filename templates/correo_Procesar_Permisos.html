@@ -4,8 +4,9 @@
     <style>
         .email-container {
             font-family: Arial, sans-serif;
-            background: linear-gradient(to right, rgb(14,70,150), rgb(12,68,142));
+            /* background: linear-gradient(to right, rgb(14,70,150), rgb(12,68,142)); */
             padding: 20px;
+            max-width:60em;
         }
         .email-content {
             background-color: #ffffff;
@@ -45,17 +46,45 @@
 <body>
     <div class="email-container">
         <div class="email-content">
+            <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse; background-color: #003f9e; border-radius: 10px 10px 0px 0px;">
+            <tr>
+                <td style="padding: 16px 0 16px 0; " align="center" >
+                <img src="https://i.ibb.co/gZ7kzbtd/logo-login-2.png" alt="logo-login-2" border="0" width="75">
+                </td>
+            </tr>
+            </table>
             <div class="email-conten-info">
                 
             <div class="email-header">Procesar solicitud de Permiso</div>
-            <div class="email-body">
-                <p>${cuerpo}</p>
+            <div class="email-body" style="text-align: center;">
+                <p style="margin-bottom: 24px;">${cuerpo}</p>
+                <img src="https://i.ibb.co/4rQ2jDJ/Loading-Files-20251107135235.gif" alt="Loading-Files-20251107135235" border="0" width="350" style="display: block; margin: 0 auto 24px auto; object-fit: cover; height: 120px; object-position: center;max-width: 350px; width: 100%;">
+                <div style="margin-top: 16px;"></div>
+                    <a href="${baseURL}/ProcesarPermisos"
+                        style="
+                        display: inline-block;
+                        background: #003f9e;
+                        color: #fff !important;
+                        text-decoration: none;
+                        font-weight: bold;
+                        font-size: 1rem;
+                        padding: 12px 32px;
+                        border-radius: 20px 5px 20px 5px;
+                        border: none;
+                        cursor: pointer;
+                        font-family: Arial, sans-serif;
+                        margin-top: 8px;
+                        "
+                        target="_blank"
+                    >Ingresar Ya</a>
+                </div>
             </div>
-            <div class="email-footer">
+            </table>
+            <div class="email-footer" style="text-align: center;">
                 <p>Intranet de Seguros Altamira</p>
             </div>
-            </div>
             <img src="https://media.licdn.com/dms/image/v2/D4E3DAQF0mlb0e_m8-Q/image-scale_191_1128/image-scale_191_1128/0/1678969137498/seguros_altamira_cover?e=2147483647&v=beta&t=oOSJm4jhoR01nmRztPezxIuPIdnn2WWJ8kt4j3tUYuE" class="email-image-footer" alt="Seguros Altamira"  style="text-align: left;">
+            </div>
         </div>
     </div>
 </body>

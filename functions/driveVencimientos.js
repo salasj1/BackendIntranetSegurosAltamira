@@ -45,7 +45,6 @@ export async function empleadosConDocumentosVencidos() {
     fields: 'files(id, name)',
     supportsAllDrives: true,
     includeItemsFromAllDrives: true,
-    pageSize: 1000
   });
   const empleados = [];
   for (const carpeta of subcarpetas.data.files) {
@@ -55,7 +54,6 @@ export async function empleadosConDocumentosVencidos() {
       fields: 'files(id, name, webViewLink)',
       supportsAllDrives: true,
       includeItemsFromAllDrives: true,
-      pageSize: 100
     });
     // Guardar documentos vencidos por tipo
     const vencidosPorTipo = {};

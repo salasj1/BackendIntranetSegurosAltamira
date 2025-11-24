@@ -23,7 +23,6 @@ router.post('/login', async (req, res) => {
                 isAdmin: true,
             });
             } else {
-            console.log('Invalid admin password');
             return res.status(401).json({ success: false, message: 'Contraseña Invalida' });
             }
         }
@@ -33,7 +32,7 @@ router.post('/login', async (req, res) => {
         const result = await pool.request()
             .input('username', sql.NVarChar, username)
             .query(`
-                SELECT u.*, e.nombre_completo, e.des_cargo, e.fecha_ing, e.des_depart, e.tipo, e.RRHH, e.correo_e email
+                SELECT u.*, e.nombre_completo nombre_completo,e.nombres nombres,e.apellidos apellidos, e.des_cargo, e.fecha_ing, e.des_depart, e.tipo, e.RRHH, e.correo_e email, e.sexo sexo
                 FROM snusuarios u
                 JOIN VSNEMPLE e ON u.cod_emp COLLATE Modern_Spanish_CI_AS = e.cod_emp COLLATE Modern_Spanish_CI_AS
                 WHERE u.username = @username COLLATE Modern_Spanish_CI_AS;
@@ -52,6 +51,8 @@ router.post('/login', async (req, res) => {
                     success: true,
                     message: 'Authenticated successfully',
                     cod_emp: user.cod_emp,
+                    nombres: user.nombres,
+                    apellidos: user.apellidos,
                     nombre_completo: user.nombre_completo,
                     des_cargo: user.des_cargo,
                     fecha_ing: user.fecha_ing,
@@ -59,7 +60,8 @@ router.post('/login', async (req, res) => {
                     tipo: user.tipo,
                     RRHH: user.RRHH,
                     email: user.email,
-                    isAdmin: false, // No es administrador
+                    sexo: user.sexo,
+                    isAdmin: false, 
                 });
             } else {
                 console.log('Invalid password');
@@ -72,6 +74,44 @@ router.post('/login', async (req, res) => {
     } catch (error) {
         console.error('ERROR: ' + JSON.stringify(error));
         res.status(500).json({ success: false, message: 'Error de conexion' });
+    }
+});
+
+// ... código existente del router ...
+
+// Nuevo endpoint para verificar el estado actual del usuario en tiempo real
+router.get('/check-status/:cod_emp', async (req, res) => {
+    const { cod_emp } = req.params;
+    if (!cod_emp) {
+        return res.status(400).json({ success: false, message: 'Código de empleado requerido' });
+    }
+
+    try {
+        const pool = await getConnection();
+
+        // 1. Obtener el estado de RRHH y los tipos de supervisión del empleado
+        const result = await pool.request()
+            .input('cod_emp', sql.VarChar, cod_emp)
+            .execute('spRevisarTipoSupervisor');
+
+        if (result.recordset.length > 0) {
+            const userStatus = result.recordset[0];
+            // Si es de RRHH, tiene todos los permisos de aprobación
+            const isRRHH = userStatus.RRHH === true;
+
+            res.json({
+                success: true,
+                RRHH: userStatus.RRHH,
+                tipo: userStatus.tipo,
+                canApproveVacations: isRRHH || userStatus.CanApproveVacations,
+                canApprovePermits: isRRHH || userStatus.CanApprovePermits
+            });
+        } else {
+            res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+        }
+    } catch (error) {
+        console.error('Error checking user status:', error);
+        res.status(500).json({ success: false, message: 'Error del servidor' });
     }
 });
 

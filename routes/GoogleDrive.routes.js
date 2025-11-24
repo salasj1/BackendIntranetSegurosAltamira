@@ -50,6 +50,19 @@ router.get('/tiposDocumentos', async (req, res) => {
   }
 });
 
+router.get('/tiposDocumentos/Empleado/:cod_emp', async (req, res) => {
+  try {  
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('cod_emp', sql.VarChar, req.params.cod_emp)
+      .execute('spObtenerTipoDocumentosEmpleado');
+    res.json(result.recordset);
+  } catch (error) {
+    console.error('Error fetching tipos de documentos para empleado:', error);
+    res.status(500).json({ error: 'Error fetching tipos de documentos para empleado' });
+  }
+});
+
 // Endpoint para crear una carpeta
 router.post('/importar-documentos', async (req, res) => {
   try {
@@ -63,7 +76,7 @@ router.post('/importar-documentos', async (req, res) => {
     res.status(500).json({ success: false, message: 'Error importando documentos', error: error.message });
   }
 });
- 
+
 
 // Función para buscar la carpeta por cod_emp
 async function buscarCarpetaPorCodEmp(drive, cod_emp) {

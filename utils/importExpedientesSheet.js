@@ -24,7 +24,7 @@ export async function getSheet1Rows() {
   const firstSheetName = sheetList[0].properties.title;
 
   // Leer los datos de la hoja 1
-  const range = `${firstSheetName}!A1:D1000`;
+  const range = firstSheetName; // Esto trae todas las filas y columnas con datos
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
     range,

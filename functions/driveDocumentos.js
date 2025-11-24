@@ -6,7 +6,6 @@ async function listFoldersInFolder(authClient, folderId) {
   const res = await drive.files.list({
     q: `'${folderId}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
     fields: 'files(id, name)',
-    pageSize: 1000,
     supportsAllDrives: true,
     includeItemsFromAllDrives: true
   });
@@ -18,7 +17,6 @@ async function listFilesInFolder(authClient, folderId) {
   const res = await drive.files.list({
     q: `'${folderId}' in parents and trashed = false and mimeType != 'application/vnd.google-apps.folder'`,
     fields: 'files(id, name, mimeType, webViewLink, createdTime, modifiedTime, owners)',
-    pageSize: 1000,
     supportsAllDrives: true,
     includeItemsFromAllDrives: true
   });

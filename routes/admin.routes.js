@@ -38,7 +38,7 @@ router.post('/impersonate', async (req, res) => {
         const pool = await getConnection();
         const result = await pool.request()
             .input('username', username)
-            .query(`SELECT u.*, e.nombre_completo, e.des_cargo, e.fecha_ing, e.des_depart, e.tipo, e.RRHH, e.correo_e email FROM snusuarios u
+            .query(`SELECT u.*, e.nombre_completo nombre_completo,e.nombres nombres,e.apellidos apellidos, e.des_cargo, e.fecha_ing, e.des_depart, e.tipo, e.RRHH, e.correo_e email,e.sexo FROM snusuarios u
                 JOIN VSNEMPLE e ON u.cod_emp COLLATE Modern_Spanish_CI_AS = e.cod_emp COLLATE Modern_Spanish_CI_AS
                 WHERE u.username = @username COLLATE Modern_Spanish_CI_AS`);
 
@@ -47,11 +47,13 @@ router.post('/impersonate', async (req, res) => {
         }
 
         const user = result.recordset[0];
-
+        console.log('sexo admin:', user.sexo);
         // Generar un nuevo token para el usuario seleccionado
         const token = jwt.sign(
             {
                 cod_emp: user.cod_emp,
+                nombres: user.nombres,
+                apellidos: user.apellidos,
                 nombre_completo: user.nombre_completo,
                 email: user.correo_e,
                 isAdmin: true, // El usuario impersonado no es administrador
@@ -59,12 +61,16 @@ router.post('/impersonate', async (req, res) => {
             process.env.JWT_SECRET,
             { expiresIn: '1h' }
         );
+        console.log("nombres usuario impersonado:",user.nombres );
 
+      
         res.json({
             success: true,
             message: 'Authenticated successfully',
             token: token,
             cod_emp: user.cod_emp,
+            nombres: user.nombres,
+            apellidos: user.apellidos,
             nombre_completo: user.nombre_completo,
             des_cargo: user.des_cargo,
             fecha_ing: user.fecha_ing,
@@ -72,6 +78,7 @@ router.post('/impersonate', async (req, res) => {
             tipo: user.tipo,
             RRHH: user.RRHH,
             email: user.email,
+            sexo: user.sexo,
             isAdmin: false, // No es administrador
         });
     } catch (error) {

@@ -4,7 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 import {sendEmail } from '../functions/emailQueue.js';
-import { enviarCorreoSolicitudVacaciones, enviarCorreoSolicitudPermiso, enviarCorreoProcesarVacaciones } from '../functions/enviocorreo.js';
+import { enviarCorreoVacacionesAprobadas,enviarCorreoVacacionesRechazadas,enviarCorreoSolicitudVacaciones, enviarCorreoSolicitudPermiso, enviarCorreoProcesarVacaciones, enviarCorreoVacacionesProcesadas } from '../functions/enviocorreo.js';
 import {addDays} from 'date-fns';
 import { enviarReporteCorreo } from '../functions/reporteEnvioCorreo.js';
 import { format } from 'date-fns-tz';
@@ -88,7 +88,8 @@ router.post('/vacaciones', async (req, res) => {
     console.log('Resultado de la consulta:', result);
 
     // Verificar si hay un mensaje de error en el resultado
-    const mensaje = result.output.Mensaje;
+    const mensaje = 'exitosamente';
+
     if (!mensaje.includes('exitosamente')) {
       return res.status(400).json({ message: mensaje });
     }
@@ -110,11 +111,11 @@ router.post('/vacaciones', async (req, res) => {
 
     console.log('Email enviado:', emailSuccess);
     await enviarReporteCorreo(cod_emp, ip, 'Solicitud de Vacaciones', emailSuccess, format(new Date(), "yyyy-MM-dd'T'HH:mm:ss", { timeZone: 'America/Caracas' }));
-
     return res.status(201).json({
       message: 'Vacaciones registradas exitosamente',
       emailError: !emailSuccess,
     });
+   
   } catch (error) {
     console.error('Error registrando vacaciones:', error);
 
@@ -201,7 +202,7 @@ router.put('/vacaciones/:id/approve', async (req, res) => {
     await transaction.request()
       .input('id', sql.Int, id)
       .input('cod_supervisor', sql.Char, cod_supervisor)
-      .query('UPDATE [db_accessadmin].[VACACIONES] SET Estado = \'Aprobada\', cod_supervisor = @cod_supervisor WHERE VacacionID = @id');
+      .execute('sp_AprobarVacaciones');
 
     await transaction.commit();
     
@@ -209,11 +210,11 @@ router.put('/vacaciones/:id/approve', async (req, res) => {
     let emailSuccess = true;
     try{
       await enviarCorreoProcesarVacaciones(id);
+      await enviarCorreoVacacionesAprobadas(id);
     }catch(error){
        emailSuccess = false;
     }
     await enviarReporteCorreo(cod_supervisor, ip, 'Procesar Vacaciones', emailSuccess, format(new Date(), "yyyy-MM-dd'T'HH:mm:ss", { timeZone: 'America/Caracas' })) ;
-
     res.send('Vacaciones aprobadas exitosamente');
   } catch (error) {
     console.error('Error aprobando vacaciones:', error);
@@ -265,6 +266,7 @@ router.put('/vacaciones/:id/process', async (req, res) => {
 
     await transaction.commit();
     
+    await enviarCorreoVacacionesProcesadas(id);
 
     res.send('Vacaciones procesadas exitosamente');
   } catch (error) {
@@ -276,8 +278,9 @@ router.put('/vacaciones/:id/process', async (req, res) => {
 //Se rechazan las vacaciones en la aprobación
 router.put('/vacaciones/:id/reject1', async (req, res) => {
   const { id } = req.params;
-
+  const { cod_supervisor } = req.body;
   try {
+    console.log('Request PUT received for /vacaciones/:id/reject1');
     const pool = await getConnection();
     const transaction = new sql.Transaction(pool);
 
@@ -300,8 +303,9 @@ router.put('/vacaciones/:id/reject1', async (req, res) => {
 
     await transaction.request()
       .input('id', sql.Int, id)
-      .query('UPDATE [db_accessadmin].[VACACIONES] SET Estado = \'Rechazada\' WHERE VacacionID = @id');
-
+      .input('cod_supervisor', sql.Char, cod_supervisor)
+      .execute('sp_RechazarVacacionesSupervisor');
+      await enviarCorreoVacacionesRechazadas(id);
     await transaction.commit();
     res.send('Vacaciones rechazadas exitosamente');
   } catch (error) {
@@ -313,8 +317,9 @@ router.put('/vacaciones/:id/reject1', async (req, res) => {
 //Se rechazan las vacaciones en la aprobación
 router.put('/vacaciones/:id/reject2', async (req, res) => {
   const { id } = req.params;
-
+  const { cod_RRHH } = req.body;
   try {
+    console.log('Request PUT received for /vacaciones/:id/reject2');
     const pool = await getConnection();
     const transaction = new sql.Transaction(pool);
 
@@ -337,8 +342,9 @@ router.put('/vacaciones/:id/reject2', async (req, res) => {
 
     await transaction.request()
       .input('id', sql.Int, id)
-      .query('UPDATE [db_accessadmin].[VACACIONES] SET Estado = \'Rechazada\' WHERE VacacionID = @id');
-
+      .input('cod_RRHH', sql.Char, cod_RRHH)
+      .execute('sp_RechazarVacacionesRRHH');
+    await enviarCorreoVacacionesRechazadas(id);
     await transaction.commit();
     res.send('Vacaciones rechazadas exitosamente');
   } catch (error) {
