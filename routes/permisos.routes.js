@@ -105,7 +105,9 @@ router.post('/permisos', async (req, res) => {
 router.get('/permisos/notificacion/Empleado/id/:cod_emp', async (req, res) => {
   const { cod_emp } = req.params;
   console.log('Request GET received for /permisos/notificacion/Empleado/id/:cod_emp');
-  try {
+  // Endpoint en mantenimiento temporalmente
+  return res.status(503).send('Endpoint en mantenimiento temporalmente');
+  /* try {
     const pool = await getConnection();
     const result = await pool.request()
       .input('cod_emp', sql.Char, cod_emp)
@@ -114,13 +116,14 @@ router.get('/permisos/notificacion/Empleado/id/:cod_emp', async (req, res) => {
   } catch (error) {
     console.error('Error al obtener permisos nuevos:', error);
     res.status(500).send('Error al obtener permisos nuevos');
-  }
+  } */
 });
 
 router.get('/permisos/notificacion/Supervisor/:cod_supervisor', async (req, res) => {
   const { cod_supervisor } = req.params;
   console.log('Request GET received for /permisos/notificacion/Supervisor/:cod_supervisor');
-  try {
+  return res.status(503).send('Endpoint en mantenimiento temporalmente');
+  /* try {
     const pool = await getConnection();
     const result = await pool.request()
       .input('cod_supervisor', sql.Char, cod_supervisor)
@@ -129,14 +132,15 @@ router.get('/permisos/notificacion/Supervisor/:cod_supervisor', async (req, res)
   } catch (error) {
     console.error('Error al obtener permisos nuevos:', error);
     res.status(500).send('Error al obtener permisos nuevos');
-  }
+  } */
 });
 
 // Ruta para obtener permisos pendientes de un supervisor específico y todos los permisos aprobados de todos los empleados
 router.get('/permisos/notificacion/RRHH/:cod_supervisor', async (req, res) => {
   const { cod_supervisor } = req.params
   console.log('Request GET received for /permisos/nuevos/:cod_supervisor');
-  try {
+  return res.status(503).send('Endpoint en mantenimiento temporalmente');
+  /* try {
     const pool = await getConnection();
     const result = await pool.request()
       .input('cod_supervisor', sql.Char, cod_supervisor)
@@ -145,7 +149,7 @@ router.get('/permisos/notificacion/RRHH/:cod_supervisor', async (req, res) => {
   } catch (error) {
     console.error('Error al obtener permisos nuevos:', error);
     res.status(500).send('Error al obtener permisos nuevos');
-  }
+  } */
 });
 
 

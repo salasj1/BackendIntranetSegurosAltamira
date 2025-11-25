@@ -5,7 +5,8 @@ const router = express.Router();
 
 // Obtener notificaciones de un empleado con estatus 1 y 2
 router.get('/:cod_emp', async (req, res) => {
-    const { cod_emp } = req.params;
+    return res.status(503).send('Endpoint en mantenimiento temporalmente');
+    /* const { cod_emp } = req.params;
     try {
         const pool = await getConnection();
         const result = await pool.request()
@@ -14,12 +15,13 @@ router.get('/:cod_emp', async (req, res) => {
         res.json(result.recordset);
     } catch (error) {
         res.status(500).send(error.message);
-    }
+    } */
 });
 
 // Crear una nueva notificación
 router.post('/', async (req, res) => {
-    const { titulo, descripcion, us_emite, us_recibe } = req.body;
+     return res.status(503).send('Endpoint en mantenimiento temporalmente');
+    /* const { titulo, descripcion, us_emite, us_recibe } = req.body;
     try {
         const pool = await getConnection();
         await pool.request()
@@ -33,12 +35,13 @@ router.post('/', async (req, res) => {
         res.sendStatus(201);
     } catch (error) {
         res.status(500).send(error.message);
-    }
+    } */
 });
 
 // Actualizar el estatus de una notificación
 router.put('/:id', async (req, res) => {
-    const { id } = req.params;
+    return res.status(503).send('Endpoint en mantenimiento temporalmente');
+    /* const { id } = req.params;
     const { status } = req.body;
     try {
         const pool = await getConnection();
@@ -49,12 +52,13 @@ router.put('/:id', async (req, res) => {
         res.sendStatus(204);
     } catch (error) {
         res.status(500).send(error.message);
-    }
+    } */
 });
 
 // Eliminar (lógicamente) una notificación
 router.delete('/:id', async (req, res) => {
-    const { id } = req.params;
+     return res.status(503).send('Endpoint en mantenimiento temporalmente');
+    /* const { id } = req.params;
     try {
         const pool = await getConnection();
         await pool.request()
@@ -63,7 +67,7 @@ router.delete('/:id', async (req, res) => {
         res.sendStatus(204);
     } catch (error) {
         res.status(500).send(error.message);
-    }
+    } */
 });
 
 export default router;
