@@ -104,7 +104,7 @@ router.post('/permisos', async (req, res) => {
 
 router.get('/permisos/notificacion/Empleado/id/:cod_emp', async (req, res) => {
   const { cod_emp } = req.params;
-  console.log('Request GET received for /permisos/notificacion/Empleado/id/:cod_emp');
+  console.log('DEVUELTO POR MANTENIMIENTO /permisos/notificacion/Empleado/id/:cod_emp');
   // Endpoint en mantenimiento temporalmente
   return res.status(503).send('Endpoint en mantenimiento temporalmente');
   /* try {
@@ -121,7 +121,7 @@ router.get('/permisos/notificacion/Empleado/id/:cod_emp', async (req, res) => {
 
 router.get('/permisos/notificacion/Supervisor/:cod_supervisor', async (req, res) => {
   const { cod_supervisor } = req.params;
-  console.log('Request GET received for /permisos/notificacion/Supervisor/:cod_supervisor');
+  console.log('DEVUELTO POR MANTENIMIENTO Request GET received for/permisos/notificacion/Supervisor/:cod_supervisor');
   return res.status(503).send('Endpoint en mantenimiento temporalmente');
   /* try {
     const pool = await getConnection();
@@ -138,7 +138,7 @@ router.get('/permisos/notificacion/Supervisor/:cod_supervisor', async (req, res)
 // Ruta para obtener permisos pendientes de un supervisor específico y todos los permisos aprobados de todos los empleados
 router.get('/permisos/notificacion/RRHH/:cod_supervisor', async (req, res) => {
   const { cod_supervisor } = req.params
-  console.log('Request GET received for /permisos/nuevos/:cod_supervisor');
+  console.log('DEVUELTO POR MANTENIMIENTO  Request GET received for /permisos/nuevos/:cod_supervisor');
   return res.status(503).send('Endpoint en mantenimiento temporalmente');
   /* try {
     const pool = await getConnection();
