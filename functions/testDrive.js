@@ -1,5 +1,8 @@
 import { authorize, createFolder, uploadFile, listFilesInFolder, findFileByNameInSubfolder, findFileByName, BuscarDocumento } from '../APIs/Drive.js';
 import { google } from 'googleapis';
+import dotenv from 'dotenv';
+dotenv.config();
+const parentFolderId = process.env.VITE_GOOGLE_DRIVE_FOLDER_ID;
 // Copia de la función analizarArchivo (puedes importar si la tienes en un util)
 function analizarArchivo(nombreArchivo, cedulaCarpeta) {
   const palabrasClave = [
@@ -9,14 +12,13 @@ function analizarArchivo(nombreArchivo, cedulaCarpeta) {
     "Cedula",
     "DocumentosOtros",
     "ConstanciaResidencia",
-    "SolicitudCedula"
+    "SolicitudCedula",
+    "SolicitudEmpleo",
+    "Rutograma"
   ];
   const palabras = palabrasClave.join('|');
-  if (!nombreArchivo.toLowerCase().endsWith('.pdf')) {
-    return "El archivo no es un PDF.";
-  }
   const regex = new RegExp(
-    `^([\\d-]+)_(${palabras})_(\\d{2}-\\d{2}-\\d{4})(_(\\d{2}-\\d{2}-\\d{4}))?\\.pdf$`,
+    `^([\\d-]+)_(${palabras})_(\\d{2}-\\d{2}-\\d{4})(_(\\d{2}-\\d{2}-\\d{4}))?(\\.pdf)?$`,
     'i'
   );
   const match = nombreArchivo.match(regex);
@@ -87,21 +89,29 @@ async function main() {
   const subfoldersRes = await drive.files.list({
     q: `'${parentFolderId}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
     fields: 'files(id, name)',
-    pageSize: 1000,
     supportsAllDrives: true,
     includeItemsFromAllDrives: true
   });
   const subfolders = subfoldersRes.data.files;
   for (const carpeta of subfolders) {
-    const archivos = await listFilesInFolder(auth, carpeta.id);
-    if (archivos.length === 0) continue;
-    
-    for (const archivo of archivos) {
-      const error = analizarArchivo(archivo.name, carpeta.name);
-      if (error) {
-        console.log(`\nCarpeta: ${carpeta.name}`);
-        console.log(`  [ERROR] ${archivo.name}: ${error}`);
-      } 
+    // Listar archivos y subcarpetas dentro de la carpeta del empleado
+    const archivosYCarpetas = await listFilesInFolder(auth, carpeta.id);
+    if (archivosYCarpetas.length === 0) continue;
+
+    // Filtrar subcarpeta "Antiguo o vencido" y solo analizar archivos fuera de ella
+    for (const item of archivosYCarpetas) {
+      // Si es una carpeta y su nombre es "Antiguo o vencido", ignorar su contenido
+      if (item.mimeType === 'application/vnd.google-apps.folder' && item.name.trim().toLowerCase() === 'antiguo o vencido') {
+        continue;
+      }
+      // Si es archivo, analizar
+      if (!item.mimeType || item.mimeType !== 'application/vnd.google-apps.folder') {
+        const error = analizarArchivo(item.name, carpeta.name);
+        if (error) {
+          console.log(`\nCarpeta: ${carpeta.name}`);
+          console.log(`  [ERROR] ${item.name}: ${error}`);
+        }
+      }
     }
   }
 }

@@ -134,7 +134,8 @@ export async function enviarCorreoProcesarPermiso(PermisoID) {
 
     const templatePath = path.join(__dirname, "../templates/correo_Procesar_Permisos.html");
     let htmlContent = fs.readFileSync(templatePath, 'utf8');
-    htmlContent = htmlContent.replace('${cuerpo}', cuerpo);
+    htmlContent = htmlContent.replace('${cuerpo}', cuerpo)
+                .replace(/\${BASE_URL}/g, process.env.BASE_URL);  
 
     const mailOptions = {
       from: '"Intranet Seguros Altamira" <IntranetSegurosAltamira@segurosaltamira.com>',
@@ -175,7 +176,7 @@ export async function enviarCorreoSolicitudCambioDatos(cod_emp, cambios, nombres
     const mailOptions = {
       from: 'Intranet Seguros Altamira <IntranetSegurosAltamira@segurosaltamira.com>',
       to: destinatario,
-      subject: `Solicitud de cambio de datos personales de ${cod_emp}`,
+      subject: `Solicitud de cambio de datos personales de ${nombres} ${apellidos}`,
       html: htmlContent
     };
     const emailResult = await sendEmail(mailOptions);
@@ -186,5 +187,275 @@ export async function enviarCorreoSolicitudCambioDatos(cod_emp, cambios, nombres
   } catch (error) {
     console.error('Error enviando correo de solicitud de cambio de datos:', error);
     throw error;
+  }
+}
+
+/**
+ * Envía un correo al empleado notificando que sus vacaciones han sido aprobadas por el supervisor.
+ * @param {number} VacacionID
+ */
+export async function enviarCorreoVacacionesAprobadas(VacacionID) {
+  try {
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('VacacionID', sql.Int, VacacionID)
+      .query('SELECT dbo.ftCorreoVacacionesAprobadas(@VacacionID) AS result');
+
+    const { nombre, correo, fecha_inicio, fecha_retorno, Numero_Dias_Vacaciones } = JSON.parse(result.recordset[0].result);
+
+    const templatePath = path.join(__dirname, "../templates/correo_Vacaciones_Aprobadas.html");
+    let htmlContent = fs.readFileSync(templatePath, 'utf8');
+    htmlContent = htmlContent
+      .replace('${nombre}', nombre)
+      .replace('${fecha_inicio}', fecha_inicio)
+      .replace('${fecha_retorno}', fecha_retorno)
+      .replace('${dias_vacaciones}', Numero_Dias_Vacaciones);
+
+    const mailOptions = {
+      from: '"Intranet Seguros Altamira" <IntranetSegurosAltamira@segurosaltamira.com>',
+      to: correo,
+      subject: 'Vacaciones aprobadas por tu supervisor',
+      html: htmlContent
+    };
+
+    const emailResult = await sendEmail(mailOptions);
+    if (!emailResult.success) {
+      console.error('Error enviando correo de vacaciones aprobadas:', emailResult.error);
+      throw new Error(`Error enviando correo: ${emailResult.message || 'Error desconocido'}`);
+    }
+  } catch (error) {
+    console.error('Error enviando correo de vacaciones aprobadas:', error);
+    throw error;
+  }
+}
+
+export async function enviarCorreoPermisosAprobados(PermisoID) {
+  try {
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('PermisoID', sql.Int, PermisoID)
+      .query('SELECT dbo.ftCorreoPermisosAprobados(@PermisoID) AS result');
+
+    const { PermisosID,nombre, correo, fecha_inicio, fecha_fin,titulo, motivo } = JSON.parse(result.recordset[0].result);
+
+    const templatePath = path.join(__dirname, "../templates/correo_Permiso_Aprobado.html");
+    let htmlContent = fs.readFileSync(templatePath, 'utf8');
+    htmlContent = htmlContent
+      .replace('${nombre}', nombre)
+      .replace('${PermisosID}', PermisosID)
+      .replace('${fecha_inicio}', fecha_inicio)
+      .replace('${fecha_fin}', fecha_fin)
+      .replace('${titulo}', titulo)
+      .replace('${Motivo}', motivo)
+      
+
+    const mailOptions = {
+      from: '"Intranet Seguros Altamira" <IntranetSegurosAltamira@segurosaltamira.com>',
+      to: correo,
+      subject: 'Permiso aprobado por tu supervisor',
+      html: htmlContent
+    };
+
+    const emailResult = await sendEmail(mailOptions);
+    if (!emailResult.success) {
+      console.error('Error enviando correo de vacaciones aprobadas:', emailResult.error);
+      throw new Error(`Error enviando correo: ${emailResult.message || 'Error desconocido'}`);
+    }
+  } catch (error) {
+    console.error('Error enviando correo de vacaciones aprobadas:', error);
+    throw error;
+  }
+}
+/**
+ * Envía un correo al empleado notificando que sus vacaciones han sido rechazadas.
+ * @param {number} VacacionID
+ */
+export async function enviarCorreoVacacionesRechazadas(VacacionID) {
+  try {
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('VacacionID', sql.Int, VacacionID)
+      .query('SELECT dbo.ftCorreoVacacionesRechazadas(@VacacionID) AS result');
+
+    const { nombre, correo, fecha_inicio, fecha_retorno, Numero_Dias_Vacaciones } = JSON.parse(result.recordset[0].result);
+
+    const templatePath = path.join(__dirname, "../templates/correo_Vacaciones_Rechazadas.html");
+    let htmlContent = fs.readFileSync(templatePath, 'utf8');
+    htmlContent = htmlContent
+      .replace('${nombre}', nombre)
+      .replace('${fecha_inicio}', fecha_inicio)
+      .replace('${fecha_retorno}', fecha_retorno)
+      .replace('${dias_vacaciones}', Numero_Dias_Vacaciones);
+
+    const mailOptions = {
+      from: '"Intranet Seguros Altamira" <IntranetSegurosAltamira@segurosaltamira.com>',
+      to:  correo,
+      subject: 'Vacaciones rechazadas',
+      html: htmlContent
+    };
+
+    const emailResult = await sendEmail(mailOptions);
+    if (!emailResult.success) {
+      console.error('Error enviando correo de vacaciones rechazadas:', emailResult.error);
+      throw new Error(`Error enviando correo: ${emailResult.message || 'Error desconocido'}`);
+    }
+  } catch (error) {
+    console.error('Error enviando correo de vacaciones rechazadas:', error);
+    throw error;
+  }
+}
+
+/**
+ * Envía un correo al empleado notificando que sus vacaciones han sido rechazadas.
+ * @param {number} VacacionID
+ */
+export async function enviarCorreoPermisoRechazado(PermisoID) {
+  try {
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('PermisoID', sql.Int, PermisoID)
+      .query('SELECT dbo.ftCorreoPermisoRechazado(@PermisoID) AS result');
+
+    const { nombre, correo, fecha_inicio, fecha_fin, motivo } = JSON.parse(result.recordset[0].result);
+
+    const templatePath = path.join(__dirname, "../templates/correo_Permiso_Rechazado.html");
+    let htmlContent = fs.readFileSync(templatePath, 'utf8');
+    htmlContent = htmlContent
+      .replace('${nombre}', nombre)
+      .replace('${fecha_inicio}', fecha_inicio)
+      .replace('${fecha_fin}', fecha_fin)
+      .replace('${motivo}', motivo);
+
+    const mailOptions = {
+      from: '"Intranet Seguros Altamira" <IntranetSegurosAltamira@segurosaltamira.com>',
+      to:  correo,
+      subject: 'Permiso rechazado',
+      html: htmlContent
+    };
+
+    const emailResult = await sendEmail(mailOptions);
+    if (!emailResult.success) {
+      console.error('Error enviando correo de permisos rechazados:', emailResult.error);
+      throw new Error(`Error enviando correo: ${emailResult.message || 'Error desconocido'}`);
+    }
+  } catch (error) {
+    console.error('Error enviando correo de permisos rechazados:', error);
+    throw error;
+  }
+}
+
+/**
+ * Envía un correo al empleado notificando que sus vacaciones han sido procesadas,
+ * usando la plantilla correo_Vacaciones_procesadas.html y la función dbo.ftCorreoVacacionesAprobadas.
+ * @param {number} VacacionID
+ */
+export async function enviarCorreoVacacionesProcesadas(VacacionID) {
+  try {
+    const pool = await getConnection();
+    // Llama a la función que retorna nombre, correo, fecha_inicio y fecha_retorno
+    const result = await pool.request()
+      .input('VacacionID', sql.Int, VacacionID)
+      .query('SELECT dbo.ftCorreoVacacionesProcesadas(@VacacionID) AS result');
+
+    const { nombre, correo,  fecha_inicio, fecha_retorno, Numero_Dias_Vacaciones_Disfrutadas, Numero_Dias_Vacaciones_Pagadas } = JSON.parse(result.recordset[0].result);
+
+    const templatePath = path.join(__dirname, "../templates/correo_Vacaciones_procesadas.html");
+    let htmlContent = fs.readFileSync(templatePath, 'utf8');
+    htmlContent = htmlContent
+      .replace('${nombre}', nombre)
+      .replace('${VacacionID}', VacacionID)
+      .replace('${fecha_inicio}', fecha_inicio)
+      .replace('${fecha_retorno}', fecha_retorno)
+      .replace('${dias_vacaciones}',Numero_Dias_Vacaciones_Disfrutadas)
+      .replace('${dias_vacaciones_pagadas}', Numero_Dias_Vacaciones_Pagadas)
+      .replace('${BASE_URL}', process.env.BASE_URL);
+    const mailOptions = {
+      from: '"Intranet Seguros Altamira" <IntranetSegurosAltamira@segurosaltamira.com>',
+      to: correo,
+      subject: 'Vacaciones procesadas',
+      html: htmlContent
+    };
+
+    const emailResult = await sendEmail(mailOptions);
+    if (!emailResult.success) {
+      console.error('Error enviando correo de vacaciones procesadas:', emailResult.error);
+      throw new Error(`Error enviando correo: ${emailResult.message || 'Error desconocido'}`);
+    }
+  } catch (error) {
+    console.error('Error enviando correo de vacaciones procesadas:', error);
+    throw error;
+  }
+}
+
+export async function enviarCorreoPermisosProcesados(PermisoID) {
+  try {
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('PermisoID', sql.Int, PermisoID)
+      .query('SELECT dbo.ftCorreoPermisosProcesados(@PermisoID) AS result');
+    const { PermisosID,nombre, correo, fecha_inicio, fecha_fin,titulo, motivo } = JSON.parse(result.recordset[0].result);
+
+    const templatePath = path.join(__dirname, "../templates/correo_Permisos_procesados.html");
+    let htmlContent = fs.readFileSync(templatePath, 'utf8');
+    const anioActual = new Date().getFullYear();
+    htmlContent = htmlContent
+      .replace('${nombre}', nombre)
+      .replace('${PermisosID}', PermisosID)
+      .replace('${fecha_inicio}', fecha_inicio)
+      .replace('${fecha_fin}', fecha_fin)
+      .replace('${titulo}', titulo)
+      .replace('${Motivo}', motivo)
+      .replace('${anioActual}', anioActual);
+      
+    const mailOptions = {
+      from: '"Intranet Seguros Altamira" <IntranetSegurosAltamira@segurosaltamira.com>',
+      to: correo,
+      subject: 'Permiso procesado',
+      html: htmlContent
+    };
+    const emailResult = await sendEmail(mailOptions);
+    if (!emailResult.success) {
+      console.error('Error enviando correo de permisos procesados:', emailResult.error);
+      throw new Error(`Error enviando correo: ${emailResult.message || 'Error desconocido'}`);
+    }
+  } catch (error) {
+    console.error('Error enviando correo de permisos procesados:', error);
+    throw error;
+  }
+}
+
+export async function enviarCorreoRutograma({ tipo, destinatario, subject, body }) {
+  let templateFile = '';
+  // Selecciona el template según el tipo
+  if (tipo === 'nuevo') {
+    templateFile = path.join(__dirname, '../templates/correo_Rutograma_Nuevo.html');
+  } else if (tipo === 'aprobado') {
+    templateFile = path.join(__dirname, '../templates/correo_Rutograma_Aprobado.html');
+  } else if (tipo === 'devuelto') {
+    templateFile = path.join(__dirname, '../templates/correo_Rutograma_Devuelto.html');
+  } else {
+    throw new Error(`Tipo de correo de rutograma no soportado: ${tipo}`);
+  }
+
+  // Validar datos obligatorios
+  if (!destinatario || !subject || !body) {
+    throw new Error(`Faltan datos obligatorios para enviar el correo de rutograma (${tipo}): destinatario, subject o body`);
+  }
+
+  // Leer y armar el HTML
+  let htmlContent = fs.readFileSync(templateFile, 'utf8');
+  htmlContent = htmlContent.replace('${cuerpo}', body)
+  .replace(/\${BASE_URL}/g, process.env.BASE_URL);
+  const mailOptions = {
+    from: '"Intranet Seguros Altamira" <IntranetSegurosAltamira@segurosaltamira.com>',
+    to:  destinatario,
+    subject,
+    html: htmlContent
+  };
+
+  const emailResult = await sendEmail(mailOptions);
+  if (!emailResult.success) {
+    console.error('Error enviando correo de rutograma:', emailResult.error);
+    throw new Error(`Error enviando correo: ${emailResult.message || 'Error desconocido'}`);
   }
 }

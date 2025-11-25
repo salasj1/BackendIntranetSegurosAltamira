@@ -1,6 +1,6 @@
 import express from 'express';
 import { getConnection, sql } from '../database/connection.js'; 
-import { enviarCorreoSolicitudPermiso, enviarCorreoProcesarPermiso } from '../functions/enviocorreo.js';
+import { enviarCorreoSolicitudPermiso, enviarCorreoProcesarPermiso, enviarCorreoPermisosProcesados, enviarCorreoPermisoRechazado,enviarCorreoPermisosAprobados} from '../functions/enviocorreo.js';
 import { enviarReporteCorreo } from '../functions/reporteEnvioCorreo.js';
 import { format } from 'date-fns-tz';
 
@@ -31,35 +31,27 @@ router.get('/permisos/supervisor/:cod_supervisor', async (req, res) => {
     const pool = await getConnection();
     const result = await pool.request()
       .input('cod_supervisor', sql.Char, cod_supervisor)
-      .query(`
-          SELECT DISTINCT
-          P.PermisosID,
-          P.Fecha_inicio,
-          P.Fecha_Fin,
-          P.Estado,
-          P.Titulo,
-          P.Motivo,
-          P.descripcion,
-          P.cod_emp,
-          P.cod_supervisor,
-          P.cod_RRHH,
-          P.descontable,
-          E.ci,
-          E.nombres,
-          E.apellidos,
-          E.des_depart AS departamento,
-          E.des_cargo AS cargo
-          FROM db_accessadmin.PERMISOS P
-          JOIN dbo.VSNEMPLE E ON P.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS = E.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS
-          JOIN db_accessadmin.SUPERVISION S ON P.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS = S.Cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS
-          WHERE S.Cod_supervisor COLLATE SQL_Latin1_General_CP1_CI_AS = @cod_supervisor
-          AND P.Estado IN ('Aprobada', 'Pendiente','Rechazada','Procesada') AND S.Tipo=2
-          ORDER BY P.Estado ASC
-      `);
+      .execute('spMostrarPermisosSupervisor');
     res.json(result.recordset);
   } catch (error) {
     console.error('Error fetching supervisor vacaciones:', error);
     res.status(500).json({ error: 'Error fetching supervisor vacaciones' });
+  }
+});
+
+router.get('/permisos/calcularFechaMaximaFin', async (req, res) => {
+  const { fechaInicio, dias } = req.query;
+  try {
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('fechaInicio', sql.Date, fechaInicio)
+      .input('dias', sql.Int, dias)
+      .query('SELECT [dbo].[ftSACalcularFechaMaximaFinVacaciones] (@fechaInicio, @dias) AS fechaFin');
+    console.log('Fecha máxima fin calculada:', result.recordset[0].fechaFin);
+      res.json({ fechaFin: result.recordset[0].fechaFin });
+  } catch (error) {
+    console.error('Error calculando fecha máxima fin:', error);
+    res.status(500).send('Error calculando fecha máxima fin');
   }
 });
 
@@ -174,25 +166,37 @@ router.put('/permisos/:PermisosID/approve', async (req, res) => {
 
     const status = result.output.STATUS;
     const resultado = result.output.RESULTADO;
-    let emailSuccess = true;
+    let emailResults = {
+      procesarPermiso: true,
+      permisosAprobados: true
+    };
     console.log('Resultado del procedimiento:', { status, resultado });
+
     if (status === 1) {
-      
-      
-      // Enviar correo de procesamiento de permiso
-      try{
+      // Enviar correos y capturar errores individualmente
+      try {
         await enviarCorreoProcesarPermiso(PermisosID);
-      }catch(error){
-        emailSuccess = false;
+      } catch (error) {
+        emailResults.procesarPermiso = false;
+        console.error('Error enviando correo procesarPermiso:', error);
       }
-      //enviar resultado  
-      res.send(resultado);
-      
-      await enviarReporteCorreo(cod_supervisor, ip, 'Solicitud para Procesar Permisos', emailSuccess, format(new Date(), "yyyy-MM-dd'T'HH:mm:ss", { timeZone: 'America/Caracas' })) ;
+      try {
+        await enviarCorreoPermisosAprobados(PermisosID);
+      } catch (error) {
+        emailResults.permisosAprobados = false;
+        console.error('Error enviando correo permisosAprobados:', error);
+      }
+      res.send({ resultado, emailResults });
+      await enviarReporteCorreo(
+        cod_supervisor,
+        ip,
+        'Solicitud para Procesar Permisos',
+        emailResults,
+        format(new Date(), "yyyy-MM-dd'T'HH:mm:ss", { timeZone: 'America/Caracas' })
+      );
     } else {
       res.status(400).send({ message: resultado });
     }
-    
   } catch (error) {
     console.error('Error al aprobar permiso:', error);
     res.status(500).send('Error al aprobar permiso');
@@ -208,20 +212,21 @@ router.put('/permisos/:PermisosID/process', async (req, res) => {
   try {
     const pool = await getConnection();
     const transaction = new sql.Transaction(pool);
-
+    await transaction.begin(sql.ISOLATION_LEVEL.SERIALIZABLE);
     const result = await pool.request()
       .input('PermisosID', sql.Int, PermisosID)
       .input('cod_RRHH', sql.Char, cod_RRHH)
       .output('STATUS', sql.Int) 
       .output('RESULTADO', sql.VarChar)
       .execute('spProcesarPermiso');
-
       const status = result.output.STATUS;
       const resultado = result.output.RESULTADO;
       if (status !== 1) {
         res.status(400).send({ message: resultado });
         return;
       }
+      await enviarCorreoPermisosProcesados(PermisosID);
+      await transaction.commit();
       res.send('Permiso procesado exitosamente');
   } catch (error) {
     console.error('Error al procesar permiso:', error);
@@ -235,9 +240,13 @@ router.put('/permisos/:PermisosID/reject1', async (req, res) => {
   const { cod_supervisor } = req.body;
 
   console.log('Request PUT received for /permisos/:PermisosID/reject1');
+  
   try {
     const pool = await getConnection();
-    const result = await pool.request()
+    const transaction = new sql.Transaction(pool);
+    await transaction.begin(sql.ISOLATION_LEVEL.SERIALIZABLE);
+
+    const result = await transaction.request()
       .input('PermisosID', sql.Int, PermisosID)
       .input('cod_supervisor', sql.Char, cod_supervisor)
       .output('STATUS', sql.Int)
@@ -248,10 +257,12 @@ router.put('/permisos/:PermisosID/reject1', async (req, res) => {
     const resultado = result.output.RESULTADO;
 
     if (status === 1) {
+       await enviarCorreoPermisoRechazado(PermisosID);
       res.send(resultado);
     } else {
       res.status(400).send(resultado);
     }
+    await transaction.commit();
   } catch (error) {
     console.error('Error al rechazar permiso:', error);
     res.status(500).send('Error al rechazar permiso');
@@ -270,28 +281,22 @@ router.put('/permisos/:PermisosID/reject2', async (req, res) => {
 
     await transaction.begin(sql.ISOLATION_LEVEL.SERIALIZABLE);
 
-    const result = await transaction.request()
-      .input('PermisosID', sql.Int, PermisosID)
-      .query('SELECT Estado FROM [db_accessadmin].[PERMISOS] WHERE PermisosID = @PermisosID');
-
-    if (result.recordset.length === 0) {
-      await transaction.rollback();
-      return res.status(404).send('Permiso no encontrado');
-    }
-
-    const permiso = result.recordset[0];
-    if (permiso.Estado !== 'Aprobada') {
-      await transaction.rollback();
-      return res.status(400).send(`El permiso ya ha sido ${permiso.Estado.toLowerCase()}`);
-    }
-
     await transaction.request()
       .input('PermisosID', sql.Int, PermisosID)
-      .input('cod_supervisor', sql.Char, cod_supervisor)
-      .query('UPDATE [db_accessadmin].[PERMISOS] SET Estado = \'Rechazada\', cod_supervisor = @cod_supervisor WHERE PermisosID = @PermisosID');
+      .input('cod_RRHH', sql.Char, cod_supervisor)
+      .output('STATUS', sql.Int)
+      .output('RESULTADO', sql.VarChar(2500))
+      .execute('sp_RechazarPermisoPendienteRRHH');
+    const status = result.output.STATUS;
+    const resultado = result.output.RESULTADO;
 
+    if (status === 1) {
+      await enviarCorreoPermisoRechazado(PermisosID);
+      res.send(resultado);
+    } else {
+      res.status(400).send(resultado);
+    }
     await transaction.commit();
-    res.send('Permiso rechazado exitosamente');
   } catch (error) {
     console.error('Error al rechazar permiso:', error);
     res.status(500).send('Error al rechazar permiso');

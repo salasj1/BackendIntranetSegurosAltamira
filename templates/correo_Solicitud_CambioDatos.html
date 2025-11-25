@@ -4,9 +4,8 @@
     <style>
         .email-container {
             font-family: Arial, sans-serif;
-            background: linear-gradient(to right, #0e4696, #0c448e);
+            /* background: linear-gradient(to right, #0e4696, #0c448e); */
             padding: 20px;
-        
         }
         .email-content {
             background-color: #ffffff;
@@ -40,14 +39,31 @@
     </style>
 </head>
 <body>
+
     <div class="email-container">
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse; background-color: #003f9e; border-radius: 10px 10px 0px 0px;">
+            <tr>
+                <td style="padding: 16px 0 16px 0; " align="center" >
+                <img src="https://i.ibb.co/gZ7kzbtd/logo-login-2.png" alt="logo-login-2" border="0" width="75">
+                </td>
+            </tr>
+        </table>
         <div class="email-content">
             <h2 class="email-header">Solicitud de Cambio de Datos Personales</h2>
             <div class="email-body">
+                <p>Estimados,</p>
                 <p>Se ha recibido una solicitud de cambio de datos personales de ${nombres} ${apellidos} con la siguiente información:</p>
                 ${cuerpo}
                 <p>Por favor, revise la información y evalúe los cambios.</p>
             </div>
+            <table <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse;">
+            <tr>
+                <td style="padding: 16px 0 0 0;" align="center">
+                    <!-- Imagen animada de rutograma devuelto -->
+                <img src="https://i.ibb.co/gL8vzSPR/data.gif" alt="data" style="width: 300px; height: 300px; display: block;">
+                </td>
+            </tr>
+            </table>
             <div class="email-footer">
                 Intranet de Seguros Altamira.
             </div>

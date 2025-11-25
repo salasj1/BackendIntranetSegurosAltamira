@@ -13,6 +13,7 @@ import constancideTrabajoRouter from './routes/constanciaDeTrabajo.routes.js';
 import googleDriveRoutes from './routes/GoogleDrive.routes.js';
 import notificacionRouter from './routes/notificaciones.routes.js';
 import expedienteRouter from './routes/expediente.routes.js';
+import estadisticasRouter from './routes/stadistic.routes.js';
 import adminRouter from './routes/admin.routes.js';
 const app = express();
 app.use(express.json()); 
@@ -36,6 +37,6 @@ app.use(arc);
 app.use(vacacionesRouter);
 app.use(permisosRouter);
 app.use('/admin', adminRouter); // Rutas de administración
-
+app.use('/estadisticas', estadisticasRouter);
 
 export default app;
