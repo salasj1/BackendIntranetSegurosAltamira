@@ -4,11 +4,10 @@ import { sendMailWithRetry } from '../functions/transporter.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-
 // Solución para __dirname en ES modules:
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
+const publicImagesPath = path.join(process.cwd(), 'public', 'images');
 export function notificarDocumentosVencidos() {
   
   cron.schedule('0 8 * * 1', async () => {
@@ -17,6 +16,15 @@ export function notificarDocumentosVencidos() {
       // Trae empleados con pendientes y los datos html desde SQL
       const result = await pool.request().execute('spEmpleadosDocumentosPendientes');
       // Leer la plantilla HTML una sola vez fuera del ciclo
+      const attachments = [
+      {
+        filename: 'logo.png',
+        path: path.join(publicImagesPath, 'logo.png'),
+        cid: 'logoEmpresa',
+        filename:'no_archivos_expediente.png',
+        path:  path.join(publicImagesPath, 'no_archivos_expediente.png'),
+        cid:'no_archivos_expediente.png'
+      }];
       const plantillaPath = path.join(__dirname, '../templates/plantillaCorreoDocumentos.html');
       const plantillaHtml = fs.readFileSync(plantillaPath, 'utf8');
       console.log('Subiendo correos de documentos vencidos...');
@@ -39,9 +47,10 @@ export function notificarDocumentosVencidos() {
           .replace('{{anio}}', new Date().getFullYear());
         const mailOptions = {
           from: 'Intranet Seguros Altamira <intranet@segurosaltamira.com.ve>',
-          to: emp.correo_e,
+          to: 'alejandro.salas@segurosaltamira.com'/* emp.correo_e */,
           subject: 'Hora de Actualizar tu Expediente',
-          html
+          html,
+          attachments:attachments
         };
         
         const resultado = await sendMailWithRetry(mailOptions);

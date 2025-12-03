@@ -3,9 +3,10 @@ import { getConnection, sql } from '../database/connection.js';
 import { enviarCorreoSolicitudPermiso, enviarCorreoProcesarPermiso, enviarCorreoPermisosProcesados, enviarCorreoPermisoRechazado,enviarCorreoPermisosAprobados} from '../functions/enviocorreo.js';
 import { enviarReporteCorreo } from '../functions/reporteEnvioCorreo.js';
 import { format } from 'date-fns-tz';
-
+import path from 'path';
+import { fileURLToPath } from 'url';
 const router = express.Router();
-
+const publicImagesPath = path.join(process.cwd(), 'public', 'images');
 // Ruta para obtener permisos de un empleado específico
 router.get('/permisos/id/:cod_emp', async (req, res) => {
   const { cod_emp } = req.params;
@@ -178,12 +179,12 @@ router.put('/permisos/:PermisosID/approve', async (req, res) => {
 
     if (status === 1) {
       // Enviar correos y capturar errores individualmente
-      try {
+      /* try {
         await enviarCorreoProcesarPermiso(PermisosID);
       } catch (error) {
         emailResults.procesarPermiso = false;
         console.error('Error enviando correo procesarPermiso:', error);
-      }
+      } */
       try {
         await enviarCorreoPermisosAprobados(PermisosID);
       } catch (error) {

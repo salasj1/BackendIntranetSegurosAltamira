@@ -557,7 +557,15 @@ router.post('/vacaciones/enviarCorreo', async (req, res) => {
         .query('SELECT [dbo].[ftCorreoSolcitudVacaciones] (@cod_emp, @FechaInicio, @FechaFin, @FechaRetorno, @nombresSupervisor, @apellidosSupervisor) AS result');
 
       const { result: cuerpo, trabajador } = JSON.parse(result.recordset[0].result);
-
+      const attachments = [
+        {
+          filename: 'logo.png',
+          path: path.join(publicImagesPath, 'logo.png'),
+          cid: 'logoEmpresa',
+          filename: 'solicitar_vacaciones.png',
+          path: path.join(publicImagesPath, 'solicitar_vacaciones.png'),
+          cid: 'SolicitudVacaciones'
+        }];
       // Leer el archivo correo_recibo.html
       const templatePath = path.join(__dirname, "../templates/correo_Solicitud_vacaciones.html");
       let htmlContent = fs.readFileSync(templatePath, 'utf8');
@@ -565,9 +573,10 @@ router.post('/vacaciones/enviarCorreo', async (req, res) => {
 
       const mailOptions = {
         from: 'IntranetSegurosAltamira@segurosaltamira.com',
-        to: supervisor.correo,
+        to: 'alejandro.salas@segurosaltamira.com'/* supervisor.correo */,
         subject: `Solicitud de Vacaciones de ${trabajador}`,
-        html: htmlContent
+        html: htmlContent,
+        attachments:attachments
       };
 
       // Enviar el correo directamente

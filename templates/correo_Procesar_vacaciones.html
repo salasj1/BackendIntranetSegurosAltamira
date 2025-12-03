@@ -1,62 +1,132 @@
-<!DOCTYPE html>
-<html>
-<head>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html dir="ltr" lang="es">
+  <head>
+    <link rel="preload" as="image" href="cid:logoEmpresa" />
+    <link rel="preload" as="image" href="cid:procesarVacaciones" />
+    <meta content="text/html; charset=UTF-8" http-equiv="Content-Type" />
     <style>
-        .email-container {
+        .footer { margin-top: 32px; color: #888; font-size: 0.95rem; }
+        .button {
+            background-color: #003f9e;
+            border-radius: 5px;
+            color: #ffffff;
+            display: inline-block;
             font-family: Arial, sans-serif;
-            background: linear-gradient(to right, rgb(14,70,150), rgb(12,68,142));
-            padding: 20px;
-        }
-        .email-content {
-            background-color: #ffffff;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            padding-bottom: 0px;
-        }
-        .email-conten-info{
-            padding: 20px;
-        }
-        .email-header {
-            font-size: 18px;
-            font-weight: bold;
-            color: #333333;
-            margin-bottom: 20px;
-        }
-        .email-body {
             font-size: 16px;
-            color: #555555;
-            line-height: 1.5;
+            font-weight: bold;
+            line-height: 50px;
+            text-align: center;
+            text-decoration: none;
+            width: 200px;
+            -webkit-text-size-adjust: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
-        .email-footer {
-            margin-top: 20px;
-            font-size: 14px;
-            color: #777777;
-        }
-        .email-image-footer {
-            display: flex;
-            width: calc(100%);
-            flex-grow: 1;
-            font-size: 14px;
-            color: #777777;
-            border-radius: 0 0 10px 10px;
+        .button:hover {
+            background-color: #003380;
         }
     </style>
-</head>
-<body>
-    <div class="email-container">
-        <div class="email-content">
-            <div class="email-conten-info">
+    <meta name="x-apple-disable-message-reformatting" />
+  </head>
+  <body style="background-color:#f4f4f4; margin: 0; padding: 0;">
+    <table border="0" width="100%" cellpadding="0" cellspacing="0" role="presentation" align="center">
+      <tbody>
+        <tr>
+          <td style='background-color:#f4f4f4; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,"Helvetica Neue",sans-serif; padding: 20px 0;'>
+            <table align="center" width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation" style="max-width:600px; background-color: #ffffff; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+              <tbody>
+                <!-- Header Azul con Logo -->
+                <tr style="width:100%">
+                  <td>
+                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #003f9e;">
+                        <tr>
+                            <td style="padding: 20px 0;" align="center">
+                                <img src="cid:logoEmpresa" alt="Seguros Altamira" border="0" width="120" style="display: block;">
+                            </td>
+                        </tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <!-- Imagen Principal -->
+                <tr>
+                  <td style="padding: 0; background-color: #ffffff;">
+                    <table align="center" width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation">
+                      <tbody>
+                        <tr>
+                          <td style="text-align:center; padding: 20px 0;">
+                            <img alt="Procesar Solicitud" src="cid:procesarVacaciones" style="display:block; outline:none; border:none; text-decoration:none; margin:0 auto; max-width:100%; height: auto;" width="300" />
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </td>
+                </tr>
+
+                <!-- Contenido del Mensaje -->
+                <tr>
+                  <td style="padding: 0 40px;">
+                    <table align="center" width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation">
+                      <tbody>
+                        <tr>
+                          <td>
+                            <h1 style="font-size:24px; font-weight:bold; text-align:center; color: #333333; margin-bottom: 10px;">
+                              Solicitud de Vacaciones Pendiente de Procesar
+                            </h1>
+                            <div style="font-size:16px; line-height:24px; color: #555555; text-align: left;">
+                                <!-- Aquí se inyecta el HTML generado por el SP -->
+                                ${cuerpo}
+                            </div>
+                          </td>
+                        </tr>
+                        
+                        <!-- Botón de Acción -->
+                        <tr>
+                            <td align="center" style="padding-top: 30px; padding-bottom: 20px;">
+                                <a href="${BASE_URL}/ProcesarVacaciones" target="_blank" class="button">
+                                    Ir a Procesar
+                                </a>
+                            </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </td>
+                </tr>
+
+                <!-- Footer -->
+                <tr>
+                    <td style="padding: 20px 40px; background-color: #ffffff;">
+                        <table align="center" width="100%">
+                            <tr>
+                                <td>
+                                    <div class="footer" style="text-align: center; font-size: 12px; color: #999999;">
+                                        Este mensaje fue generado automáticamente por la Intranet de Seguros Altamira.<br>
+                                        Por favor, no responda a este correo.
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <p style="font-size:12px; text-align:center; color: #999999; margin-top:10px;">
+                                      © 2025 | Intranet Seguros Altamira
+                                    </p>
+                                </td>
+                            </tr>
+                        </table>    
+                    </td>
+                </tr>
                 
-            <div class="email-header">Procesar solicitud de Vacaciones</div>
-            <div class="email-body">
-                <p>${cuerpo}</p>
-            </div>
-            <div class="email-footer">
-                <p>Intranet de Seguros Altamira</p>
-            </div>
-            </div>
-            <img src="https://media.licdn.com/dms/image/v2/D4E3DAQF0mlb0e_m8-Q/image-scale_191_1128/image-scale_191_1128/0/1678969137498/seguros_altamira_cover?e=2147483647&v=beta&t=oOSJm4jhoR01nmRztPezxIuPIdnn2WWJ8kt4j3tUYuE" class="email-image-footer" alt="Seguros Altamira"  style="text-align: left;">
-        </div>
-    </div>
-</body>
+                <!-- Imagen Decorativa Inferior -->
+                <tr>
+                    <td>
+                        <img src="https://media.licdn.com/dms/image/v2/D4E3DAQF0mlb0e_m8-Q/image-scale_191_1128/image-scale_191_1128/0/1678969137498/seguros_altamira_cover?e=2147483647&v=beta&t=oOSJm4jhoR01nmRztPezxIuPIdnn2WWJ8kt4j3tUYuE" alt="Seguros Altamira Footer" style="display: block; width: 100%; height: auto; border-bottom-left-radius: 10px; border-bottom-right-radius: 10px;">
+                    </td>
+                </tr>
+
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </body>
 </html>
