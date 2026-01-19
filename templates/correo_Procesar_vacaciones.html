@@ -34,6 +34,7 @@
           <td style='background-color:#f4f4f4; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,"Helvetica Neue",sans-serif; padding: 20px 0;'>
             <table align="center" width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation" style="max-width:600px; background-color: #ffffff; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
               <tbody>
+                
                 <!-- Header Azul con Logo -->
                 <tr style="width:100%">
                   <td>
@@ -46,7 +47,13 @@
                     </table>
                   </td>
                 </tr>
-
+                <tr>
+                  <td>
+                     <h1 style="font-size:24px; font-weight:bold; text-align:center; color: #333333; margin-bottom: 10px;">
+                              Solicitud de Vacaciones Pendiente por Procesar
+                      </h1>
+                  </td>
+                </tr>
                 <!-- Imagen Principal -->
                 <tr>
                   <td style="padding: 0; background-color: #ffffff;">
@@ -69,9 +76,7 @@
                       <tbody>
                         <tr>
                           <td>
-                            <h1 style="font-size:24px; font-weight:bold; text-align:center; color: #333333; margin-bottom: 10px;">
-                              Solicitud de Vacaciones Pendiente de Procesar
-                            </h1>
+                           
                             <div style="font-size:16px; line-height:24px; color: #555555; text-align: left;">
                                 <!-- Aquí se inyecta el HTML generado por el SP -->
                                 ${cuerpo}
@@ -81,7 +86,7 @@
                         
                         <!-- Botón de Acción -->
                         <tr>
-                            <td align="center" style="padding-top: 30px; padding-bottom: 20px;">
+                            <td align="center" style="padding-top: 30px; padding-bottom: 20px; color:#ffffff">
                                 <a href="${BASE_URL}/ProcesarVacaciones" target="_blank" class="button">
                                     Ir a Procesar
                                 </a>

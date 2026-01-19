@@ -44,7 +44,8 @@ export function notificarDocumentosVencidos() {
         let html = plantillaHtml
           .replace(/{{nombre_completo}}/g, emp.nombre_completo)
           .replace('{{detalles}}', detalles)
-          .replace('{{anio}}', new Date().getFullYear());
+          .replace('{{anio}}', new Date().getFullYear())
+          .replace('${BASE_URL}', process.env.BASE_URL);
         const mailOptions = {
           from: 'Intranet Seguros Altamira <intranet@segurosaltamira.com.ve>',
           to: 'alejandro.salas@segurosaltamira.com'/* emp.correo_e */,

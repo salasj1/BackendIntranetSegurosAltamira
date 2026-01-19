@@ -59,7 +59,8 @@
     </tr>
     </table>
     <div class="continer2">
-      <div class="header">Nuevo Rutograma Registrado</div>
+      <!-- Se cambiaron los estilos de clase a estilos en línea (inline) -->
+      <div style="color: #003f9e; font-size: 1.5rem; margin-top: 15px;margin-bottom: 16px; font-family: Arial, sans-serif; font-weight: bold; text-align: center;">Nuevo Rutograma Registrado</div>
 
       <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse;">
         <tr>
@@ -74,7 +75,7 @@
           </td>
         </tr>
         <td style="padding: 16px 0 0 0;" align="center">
-          <a href="${baseURL}/GestionExpediente"
+          <a href="${BASE_URL}/GestionExpediente"
             style="
               display: inline-block;
               background: #003f9e;
@@ -95,6 +96,7 @@
         <tr>
           <td style="padding: 16px 0 0 0;" align="center">
             <div class="footer">
+              Solo se puede abrir en el navegador del ordernador
               Este mensaje fue generado automáticamente por la Intranet de Seguros Altamira.<br>
               No responda a este correo.
             </div>
@@ -103,11 +105,11 @@
       </table>
     </div>
     <div class="footer-image-wrapper">
-      <img src="cid:footerRutas" alt="imagen-rutas" border="0">
+      <img src="cid:footerRutas" class="email-image-footer"
+      alt="footer-mapa-rutograma"
+      style="max-width:100%; width:100%; height:120px; object-fit:cover; object-position:center 20%; display:block; margin:0 auto; border-radius:0 0 10px 10px;">
     </div>
   </div>
-  
-  </div>
-  
+    
 </body>
 </html>

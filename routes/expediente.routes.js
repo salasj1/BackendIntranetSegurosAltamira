@@ -121,7 +121,7 @@ router.post('/rutograma', async (req, res) => {
     console.log(req.body);
     console.log(JSON.stringify(req.body));
     // Guardar rutograma completo (ida y regreso)
-    await pool.request()
+    /* await pool.request()
       .input('cod_emp', sql.Char, cod_emp)
       .input('RutasOficina', sql.NVarChar(sql.MAX), JSON.stringify(RutaaOficina))
       .input('RutasCasa', sql.NVarChar(sql.MAX), JSON.stringify(RutaaCasa))
@@ -148,7 +148,7 @@ router.post('/rutograma', async (req, res) => {
       .input('ActividadesSeleccionadasRegreso', sql.NVarChar(sql.MAX), JSON.stringify(actividadesSeleccionadasRegreso || []))
       .input('DetallesActividadesRegreso', sql.NVarChar(sql.MAX), JSON.stringify(detallesActividadesRegreso || {}))
       .execute('spGuardarRutograma'); // Debes crear/ajustar este SP en SQL
-
+ */
     // 1. Ejecutar la función para obtener el JSON del correo de nuevo rutograma
     const correoResult = await pool.request()
       .input('cod_emp', sql.Char, cod_emp)

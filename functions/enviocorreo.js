@@ -35,7 +35,9 @@ async function enviarCorreo(cod_emp, fechaInicio, fechaFin, fechaRetorno, tipo, 
         {
           filename: 'logo.png',
           path: path.join(publicImagesPath, 'logo.png'),
-          cid: 'logoEmpresa'
+          cid: 'logoEmpresa',
+          contentType: 'image/png' ,
+          contentDisposition: 'inline'
         }
       ];
       let result;
@@ -52,7 +54,9 @@ async function enviarCorreo(cod_emp, fechaInicio, fechaFin, fechaRetorno, tipo, 
         attachments.push({
           filename: 'solicitar_vacaciones.png',
           path: path.join(publicImagesPath, 'solicitar_vacaciones.png'),
-          cid: 'SolicitudVacaciones'
+          cid: 'SolicitudVacaciones',
+          contentType: 'image/png' ,
+          contentDisposition: 'inline'
         });
         } else {
         result = await pool.request()
@@ -66,8 +70,8 @@ async function enviarCorreo(cod_emp, fechaInicio, fechaFin, fechaRetorno, tipo, 
           .query('SELECT [dbo].[ftCorreoSolcitudPermisos] (@cod_emp, @FechaInicio, @FechaFin, @Titulo, @Motivo, @nombresSupervisor, @apellidosSupervisor) AS result');
         
         attachments.push({
-          filename: 'solcitud_permiso.png',
-          path: path.join(publicImagesPath, 'solcitud_permiso.png'),
+          filename: 'solicitud_permiso.png',
+          path: path.join(publicImagesPath, 'solicitud_permiso.png'),
           cid: 'SolicitudPermiso'
         });
       
@@ -123,12 +127,13 @@ export async function enviarCorreoProcesarVacaciones(VacacionID) {
     {
       filename: 'logo.png',
       path: path.join(publicImagesPath, 'logo.png'),
-      cid: 'logoEmpresa',
-      filename:'procesar_vacaciones.gif',
-      path: path.join(publicImagesPath, 'procesar_vacaciones.gif'),
+      cid: 'logoEmpresa'},
+     {
+      filename:'procesar_vacaciones.png',
+      path: path.join(publicImagesPath, 'procesar_vacaciones.png'),
       cid:'procesarVacaciones',
-
-    }];
+     }
+    ];
     const templatePath = path.join(__dirname, "../templates/correo_Procesar_vacaciones.html");
     let htmlContent = fs.readFileSync(templatePath, 'utf8');
     htmlContent = htmlContent.replace('${cuerpo}', cuerpo)
@@ -167,21 +172,25 @@ export async function enviarCorreoProcesarPermiso(PermisoID) {
         {
           filename: 'logo.png',
           path: path.join(publicImagesPath, 'logo.png'),
-          cid: 'logoEmpresa',
-          filename:'procesando.gif',
-          path: path.join(publicImagesPath, 'procesando.gif'),
-          cid: 'procesando',
-      }];
+          cid: 'logoEmpresa'
+        },
+        {
+          filename:'procesar_permiso.png',
+          path: path.join(publicImagesPath, 'procesar_permiso.png'),
+          cid: 'ProcesarPermiso'
+        }
+    ];
     const templatePath = path.join(__dirname, "../templates/correo_Procesar_Permisos.html");
     let htmlContent = fs.readFileSync(templatePath, 'utf8');
     htmlContent = htmlContent.replace('${cuerpo}', cuerpo)
-                .replace(/\${BASE_URL}/g, process.env.BASE_URL);  
+                .replace('${BASE_URL}', process.env.BASE_URL);
 
     const mailOptions = {
       from: '"Intranet Seguros Altamira" <IntranetSegurosAltamira@segurosaltamira.com>',
       to: 'alejandro.salas@segurosaltamira.com'/* 'capitalhumano@segurosaltamira.com' */,
       subject: `Procesar Permiso de ${trabajador}`,
-      html: htmlContent
+      html: htmlContent,
+      attachments:attachments
     };
     
     const emailResult = await sendEmail(mailOptions);
@@ -203,14 +212,17 @@ export async function enviarCorreoSolicitudCambioDatos(cod_emp, cambios, nombres
     const destinatario = 'capitalhumano@segurosaltamira.com';
     const templatePath = path.join(__dirname, '../templates/correo_Solicitud_CambioDatos.html');
     const attachments = [
-    {
-      filename: 'logo.png',
-      path: path.join(publicImagesPath, 'logo.png'),
-      cid: 'logoEmpresa',
-      filename:'solcitud_datos_personales.gif',
-      path: path.join(publicImagesPath, 'solcitud_datos_personales.gif'),
-      cid:'solicitudDatosPersonales'
-    }];
+      {
+        filename: 'logo.png',
+        path: path.join(publicImagesPath, 'logo.png'),
+        cid: 'logoEmpresa'
+      },
+      {
+        filename:'solicitud_datos_personales.gif',
+        path: path.join(publicImagesPath, 'solcitud_datos_personales.gif'),
+        cid:'solicitudDatosPersonales'
+      }
+    ];
     let htmlContent = fs.readFileSync(templatePath, 'utf8');
     // Generar cuerpo dinámico con los cambios solicitados
     let cuerpo = '<ul>';
@@ -256,15 +268,19 @@ export async function enviarCorreoVacacionesAprobadas(VacacionID) {
         {
           filename: 'logo.png',
           path: path.join(publicImagesPath, 'logo.png'),
-          cid: 'logoEmpresa',
+          cid: 'logoEmpresa'
+        },
+        {
           filename: 'vacaciones_aprobadas.png',
           path: path.join(publicImagesPath, 'vacaciones_aprobadas.png'),
-          cid: 'vacacionesAprobadas',
+          cid: 'vacacionesAprobadas'
+        },
+        {
           filename:'procesando.gif',
           path: path.join(publicImagesPath, 'procesando.gif'),
-          cid: 'procesando',
-
-    }];
+          cid: 'procesando'
+        }
+    ];
     const templatePath = path.join(__dirname, "../templates/correo_Vacaciones_Aprobadas.html");
     let htmlContent = fs.readFileSync(templatePath, 'utf8');
     htmlContent = htmlContent
@@ -324,7 +340,7 @@ export async function enviarCorreoPermisosAprobados(PermisoID) {
           cid: 'logoEmpresa' 
         },
         {
-          file:'permiso_aprobado.gif',
+          filename:'permiso_aprobado.gif',
           path:path.join(publicImagesPath,'permiso_aprobado.gif'),
           cid:'imagenPermisoAprobado'
         },
@@ -362,7 +378,9 @@ export async function enviarCorreoVacacionesRechazadas(VacacionID) {
     {
       filename: 'logo.png',
       path: path.join(publicImagesPath, 'logo.png'),
-      cid: 'logoEmpresa',
+      cid: 'logoEmpresa'
+    },
+    {
       filename: 'failed.gif',
       path: path.join(publicImagesPath, 'failed.gif'),
       cid: 'failedImage'
@@ -410,7 +428,9 @@ export async function enviarCorreoPermisoRechazado(PermisoID) {
     {
       filename: 'logo.png',
       path: path.join(publicImagesPath, 'logo.png'),
-      cid: 'logoEmpresa',
+      cid: 'logoEmpresa'
+    },
+    {
       filename: 'failed.gif',
       path: path.join(publicImagesPath, 'failed.gif'),
       cid: 'failedImage'
@@ -447,29 +467,33 @@ export async function enviarCorreoPermisoRechazado(PermisoID) {
  * usando la plantilla correo_Vacaciones_procesadas.html y la función dbo.ftCorreoVacacionesAprobadas.
  * @param {number} VacacionID
  */
-export async function enviarCorreoVacacionesProcesadas(VacacionID) {
+export async function enviarCorreoVacacionesProcesadas(paramVacacionID) {
   try {
     const pool = await getConnection();
     // Llama a la función que retorna nombre, correo, fecha_inicio y fecha_retorno
     const result = await pool.request()
-      .input('VacacionID', sql.Int, VacacionID)
+      .input('VacacionID', sql.Int, paramVacacionID)
       .query('SELECT dbo.ftCorreoVacacionesProcesadas(@VacacionID) AS result');
 
-    const { nombre, correo,  fecha_inicio, fecha_retorno, Numero_Dias_Vacaciones_Disfrutadas, Numero_Dias_Vacaciones_Pagadas } = JSON.parse(result.recordset[0].result);
+    
+
     const attachments = [
     {
       filename: 'logo.png',
       path: path.join(publicImagesPath, 'logo.png'),
-      cid: 'logoEmpresa',
+      cid: 'logoEmpresa'
+    },
+    {
       filename:'vacaciones_procesada.gif',
       path: path.join(publicImagesPath, 'vacaciones_procesada.gif'),
       cid:'vacacionesProcesadas'
     }];
     const templatePath = path.join(__dirname, "../templates/correo_Vacaciones_procesadas.html");
     let htmlContent = fs.readFileSync(templatePath, 'utf8');
+    const { nombre, correo, VacacionID, fecha_inicio, fecha_retorno, Numero_Dias_Vacaciones_Disfrutadas, Numero_Dias_Vacaciones_Pagadas } = JSON.parse(result.recordset[0].result);
     htmlContent = htmlContent
       .replace('${nombre}', nombre)
-      .replace('${VacacionID}', VacacionID)
+      .replace('${id}', VacacionID)
       .replace('${fecha_inicio}', fecha_inicio)
       .replace('${fecha_retorno}', fecha_retorno)
       .replace('${dias_vacaciones}',Numero_Dias_Vacaciones_Disfrutadas)
@@ -505,7 +529,9 @@ export async function enviarCorreoPermisosProcesados(PermisoID) {
     {
       filename: 'logo.png',
       path: path.join(publicImagesPath, 'logo.png'),
-      cid: 'logoEmpresa',
+      cid: 'logoEmpresa'
+    },
+    {
       filename:'vacaciones_procesada.gif',
       path: path.join(publicImagesPath, 'vacaciones_procesada.gif'),
       cid:'vacacionesProcesadas'
@@ -595,7 +621,7 @@ export async function enviarCorreoRutograma({ tipo, destinatario, subject, body 
   // Leer y armar el HTML
   let htmlContent = fs.readFileSync(templateFile, 'utf8');
   htmlContent = htmlContent.replace('${cuerpo}', body)
-  .replace(/\${BASE_URL}/g, process.env.BASE_URL);
+  .replace('${BASE_URL}', process.env.BASE_URL);
   const mailOptions = {
     from: '"Intranet Seguros Altamira" <IntranetSegurosAltamira@segurosaltamira.com>',
     to:  'alejandro.salas@segurosaltamira.com'/* destinatario */,

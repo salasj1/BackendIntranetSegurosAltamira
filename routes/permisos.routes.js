@@ -179,12 +179,12 @@ router.put('/permisos/:PermisosID/approve', async (req, res) => {
 
     if (status === 1) {
       // Enviar correos y capturar errores individualmente
-      /* try {
+      try {
         await enviarCorreoProcesarPermiso(PermisosID);
       } catch (error) {
         emailResults.procesarPermiso = false;
         console.error('Error enviando correo procesarPermiso:', error);
-      } */
+      }
       try {
         await enviarCorreoPermisosAprobados(PermisosID);
       } catch (error) {
@@ -314,29 +314,7 @@ router.get('/permisos/aprobadosProcesados', async (req, res) => {
   try {
     const pool = await getConnection();
     const result = await pool.request()
-      .query(`
-        SELECT DISTINCT
-          P.PermisosID,
-          P.Fecha_inicio,
-          P.Fecha_Fin,
-          P.Estado,
-          P.cod_emp,
-          P.cod_supervisor,
-          P.Titulo,
-          P.Motivo,
-          P.Estado,
-          P.descripcion,
-          P.descontable,
-          E.nombre_completo,
-          E.nombres,
-          E.apellidos,
-          E.ci,
-          E.des_depart AS departamento,
-          E.des_cargo AS cargo
-        FROM db_accessadmin.PERMISOS P
-        JOIN dbo.VSNEMPLE E ON P.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS = E.cod_emp COLLATE SQL_Latin1_General_CP1_CI_AS
-        WHERE P.Estado IN ('Aprobada', 'Procesada','Rechazada')
-      `);
+      .execute('[db_accessadmin].[spMostrarPermisosRRHH]')
     res.json(result.recordset);
   } catch (error) {
     console.error('Error obteniendo permisos aprobados y procesados:', error);
