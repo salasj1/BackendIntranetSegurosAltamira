@@ -532,9 +532,9 @@ export async function enviarCorreoPermisosProcesados(PermisoID) {
       cid: 'logoEmpresa'
     },
     {
-      filename:'vacaciones_procesada.gif',
-      path: path.join(publicImagesPath, 'vacaciones_procesada.gif'),
-      cid:'vacacionesProcesadas'
+      filename:'permisos_procesados.png',
+      path: path.join(publicImagesPath, 'permisos_procesados.png'),
+      cid:'permisosProcesados'
     }];
     const templatePath = path.join(__dirname, "../templates/correo_Permisos_procesados.html");
     let htmlContent = fs.readFileSync(templatePath, 'utf8');
