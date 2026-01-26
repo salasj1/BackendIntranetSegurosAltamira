@@ -48,7 +48,7 @@ export function notificarDocumentosVencidos() {
           .replace('${BASE_URL}', process.env.BASE_URL);
         const mailOptions = {
           from: 'Intranet Seguros Altamira <intranet@segurosaltamira.com.ve>',
-          to: 'alejandro.salas@segurosaltamira.com'/* emp.correo_e */,
+          to: emp.correo_e,
           subject: 'Hora de Actualizar tu Expediente',
           html,
           attachments:attachments

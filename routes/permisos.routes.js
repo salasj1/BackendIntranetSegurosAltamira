@@ -245,13 +245,9 @@ router.put('/permisos/:PermisosID/reject1', async (req, res) => {
   const { cod_supervisor } = req.body;
 
   console.log('Request PUT received for /permisos/:PermisosID/reject1');
-  
   try {
     const pool = await getConnection();
-    const transaction = new sql.Transaction(pool);
-    await transaction.begin(sql.ISOLATION_LEVEL.SERIALIZABLE);
-
-    const result = await transaction.request()
+    const result = await pool.request()
       .input('PermisosID', sql.Int, PermisosID)
       .input('cod_supervisor', sql.Char, cod_supervisor)
       .output('STATUS', sql.Int)
@@ -262,12 +258,11 @@ router.put('/permisos/:PermisosID/reject1', async (req, res) => {
     const resultado = result.output.RESULTADO;
 
     if (status === 1) {
-       await enviarCorreoPermisoRechazado(PermisosID);
+      await enviarCorreoPermisoRechazado(PermisosID);
       res.send(resultado);
     } else {
       res.status(400).send(resultado);
     }
-    await transaction.commit();
   } catch (error) {
     console.error('Error al rechazar permiso:', error);
     res.status(500).send('Error al rechazar permiso');
@@ -282,11 +277,7 @@ router.put('/permisos/:PermisosID/reject2', async (req, res) => {
   console.log('Request PUT received for /permisos/:PermisosID/reject2');
   try {
     const pool = await getConnection();
-    const transaction = new sql.Transaction(pool);
-
-    await transaction.begin(sql.ISOLATION_LEVEL.SERIALIZABLE);
-
-    await transaction.request()
+    const result = await pool.request()
       .input('PermisosID', sql.Int, PermisosID)
       .input('cod_RRHH', sql.Char, cod_supervisor)
       .output('STATUS', sql.Int)
@@ -301,7 +292,6 @@ router.put('/permisos/:PermisosID/reject2', async (req, res) => {
     } else {
       res.status(400).send(resultado);
     }
-    await transaction.commit();
   } catch (error) {
     console.error('Error al rechazar permiso:', error);
     res.status(500).send('Error al rechazar permiso');

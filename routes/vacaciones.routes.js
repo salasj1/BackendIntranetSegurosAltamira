@@ -573,7 +573,7 @@ router.post('/vacaciones/enviarCorreo', async (req, res) => {
 
       const mailOptions = {
         from: 'IntranetSegurosAltamira@segurosaltamira.com',
-        to: 'alejandro.salas@segurosaltamira.com'/* supervisor.correo */,
+        to: supervisor.correo,
         subject: `Solicitud de Vacaciones de ${trabajador}`,
         html: htmlContent,
         attachments:attachments

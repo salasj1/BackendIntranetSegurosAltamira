@@ -85,7 +85,7 @@ async function enviarCorreo(cod_emp, fechaInicio, fechaFin, fechaRetorno, tipo, 
 
       const mailOptions = {
         from: '"Intranet Seguros Altamira" <IntranetSegurosAltamira@segurosaltamira.com>',
-        to: 'alejandro.salas@segurosaltamira.com'/* destinatario || supervisor.correo */,
+        to: destinatario || supervisor.correo,
         subject: `${subjectPrefix} de ${trabajador}`,
         html: htmlContent,
         attachments:attachments
@@ -141,7 +141,7 @@ export async function enviarCorreoProcesarVacaciones(VacacionID) {
 
     const mailOptions = {
       from: '"Intranet Seguros Altamira" <IntranetSegurosAltamira@segurosaltamira.com>',
-      to: 'alejandro.salas@segurosaltamira.com'/* 'capitalhumano@segurosaltamira.com' */,
+      to: 'capitalhumano@segurosaltamira.com',
       subject: `Procesar Vacaciones de ${trabajador}`,
       html: htmlContent,
       attachments:attachments
@@ -187,7 +187,7 @@ export async function enviarCorreoProcesarPermiso(PermisoID) {
 
     const mailOptions = {
       from: '"Intranet Seguros Altamira" <IntranetSegurosAltamira@segurosaltamira.com>',
-      to: 'alejandro.salas@segurosaltamira.com'/* 'capitalhumano@segurosaltamira.com' */,
+      to: 'capitalhumano@segurosaltamira.com',
       subject: `Procesar Permiso de ${trabajador}`,
       html: htmlContent,
       attachments:attachments
@@ -236,7 +236,7 @@ export async function enviarCorreoSolicitudCambioDatos(cod_emp, cambios, nombres
     htmlContent = htmlContent.replace('${apellidos}', apellidos);
     const mailOptions = {
       from: 'Intranet Seguros Altamira <IntranetSegurosAltamira@segurosaltamira.com>',
-      to: 'alejandro.salas@segurosaltamira.com'/* destinatario */,
+      to: destinatario,
       subject: `Solicitud de cambio de datos personales de ${nombres} ${apellidos}`,
       html: htmlContent,
       attachments:attachments
@@ -291,7 +291,7 @@ export async function enviarCorreoVacacionesAprobadas(VacacionID) {
 
     const mailOptions = {
       from: '"Intranet Seguros Altamira" <IntranetSegurosAltamira@segurosaltamira.com>',
-      to: 'alejandro.salas@segurosaltamira.com'/* correo */,
+      to: correo,
       subject: 'Vacaciones aprobadas por tu supervisor',
       html: htmlContent,
       attachments:attachments
@@ -330,7 +330,7 @@ export async function enviarCorreoPermisosAprobados(PermisoID) {
     
     const mailOptions = {
       from: '"Intranet Seguros Altamira" <IntranetSegurosAltamira@segurosaltamira.com>',
-      to: 'alejandro.salas@segurosaltamira.com'/* correo */,
+      to: correo,
       subject: 'Permiso aprobado por tu supervisor',
       html: htmlContent,
       attachments:[
@@ -395,7 +395,7 @@ export async function enviarCorreoVacacionesRechazadas(VacacionID) {
 
     const mailOptions = {
       from: '"Intranet Seguros Altamira" <IntranetSegurosAltamira@segurosaltamira.com>',
-      to: 'alejandro.salas@segurosaltamira.com' /* correo */,
+      to:  correo,
       subject: 'Vacaciones rechazadas',
       html: htmlContent,
       attachments:attachments
@@ -445,7 +445,7 @@ export async function enviarCorreoPermisoRechazado(PermisoID) {
 
     const mailOptions = {
       from: '"Intranet Seguros Altamira" <IntranetSegurosAltamira@segurosaltamira.com>',
-      to:  'alejandro.salas@segurosaltamira.com'/* correo */,
+      to: correo,
       subject: 'Permiso rechazado',
       html: htmlContent,
       attachments:attachments
@@ -501,7 +501,7 @@ export async function enviarCorreoVacacionesProcesadas(paramVacacionID) {
       .replace('${BASE_URL}', process.env.BASE_URL);
     const mailOptions = {
       from: '"Intranet Seguros Altamira" <IntranetSegurosAltamira@segurosaltamira.com>',
-      to: 'alejandro.salas@segurosaltamira.com'/* correo */,
+      to: correo,
       subject: 'Vacaciones procesadas',
       html: htmlContent,
       attachments:attachments
@@ -550,7 +550,7 @@ export async function enviarCorreoPermisosProcesados(PermisoID) {
       
     const mailOptions = {
       from: '"Intranet Seguros Altamira" <IntranetSegurosAltamira@segurosaltamira.com>',
-      to: 'alejandro.salas@segurosaltamira.com'/* correo */,
+      to: correo,
       subject: 'Permiso procesado',
       html: htmlContent,
       attachments:attachments
@@ -624,7 +624,7 @@ export async function enviarCorreoRutograma({ tipo, destinatario, subject, body 
   .replace('${BASE_URL}', process.env.BASE_URL);
   const mailOptions = {
     from: '"Intranet Seguros Altamira" <IntranetSegurosAltamira@segurosaltamira.com>',
-    to:  'alejandro.salas@segurosaltamira.com'/* destinatario */,
+    to:  destinatario,
     subject,
     html: htmlContent,
     attachments: attachments
