@@ -23,7 +23,7 @@ export function notificarDocumentosVencidos() {
         cid: 'logoEmpresa',
         filename:'no_archivos_expediente.png',
         path:  path.join(publicImagesPath, 'no_archivos_expediente.png'),
-        cid:'no_archivos_expediente.png'
+        cid:'no_archivos_expediente'
       }];
       const plantillaPath = path.join(__dirname, '../templates/plantillaCorreoDocumentos.html');
       const plantillaHtml = fs.readFileSync(plantillaPath, 'utf8');
