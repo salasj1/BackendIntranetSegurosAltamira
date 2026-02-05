@@ -32,10 +32,9 @@ router.get('/getDatosPersonales/:cod_emp', async (req, res) => {
     }
 });
 
-
 router.post('/SolicitarCambioDatosPersonales', async (req, res) => {
-    const { cod_emp, cedula, nombres, apellidos, rif, edocivil, email, fechaNacimiento, telefonoCelular, direccion } = req.body;
-    console.log(`Request POST received for /SolicitarCambioDatosPersonales with cod_emp: ${cod_emp}, cedula: ${cedula}, nombres: ${nombres}, apellidos: ${apellidos}, rif: ${rif}, edocivil: ${edocivil}, email: ${email}, fechaNacimiento: ${fechaNacimiento}, telefonoCelular: ${telefonoCelular}, direccion: ${direccion}`);
+    const { cod_emp, cedula, nombres, apellidos, rif, edocivil, email, fechaNacimiento, telefonoCelular, direccion, profesion } = req.body;
+    console.log(`Request POST received for /SolicitarCambioDatosPersonales `);
 
     try {
         const pool = await getConnection();
@@ -50,6 +49,7 @@ router.post('/SolicitarCambioDatosPersonales', async (req, res) => {
             .input('fechaNacimiento', sql.NVarChar, fechaNacimiento)
             .input('telefonoCelular', sql.NVarChar, telefonoCelular)
             .input('direccion', sql.NVarChar, direccion)
+            .input('profesion', sql.NVarChar, profesion)
             .execute('spSolicitarCambioDatosPersonales');
 
         // Buscar los cambios realizados para el correo
@@ -428,7 +428,28 @@ router.get('/getTiposTransporte', async (req, res) => {
         console.error('ERROR: ' + JSON.stringify(error));
         res.status(500).json({ success: false, message: 'Error de conexion' });
     }
-  });
+});
+
+//Ruta para mostrar las profesiones
+router.get('/getProfesiones', async (req, res) => {
+  try {
+      const pool = await getConnection();
+      const result = await pool.request()
+          .execute('spObtenerProfesiones');
+
+      if (result.recordset.length > 0) {
+          res.json({
+              success: true,
+              profesiones: result.recordset
+          });
+      } else {
+          res.json({ success: false, message: 'No se encontraron profesiones' });
+      }
+  } catch (error) {
+      console.error('ERROR: ' + JSON.stringify(error));
+      res.status(500).json({ success: false, message: 'Error de conexion' });
+  }
+});
 
 router.get('/getTipoActividadesExtra', async (req, res) => {
   try {
