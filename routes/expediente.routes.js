@@ -52,37 +52,48 @@ router.post('/SolicitarCambioDatosPersonales', async (req, res) => {
             .input('profesion', sql.NVarChar, profesion)
             .execute('spSolicitarCambioDatosPersonales');
 
-        // Buscar los cambios realizados para el correo
-        const cambios = [];
-        if (result.recordset && result.recordset[0] && result.recordset[0].cambios_realizados > 0) {
-            // Consultar los cambios pendientes recién insertados
-            const cambiosResult = await pool.request()
-                .input('cod_emp', sql.NVarChar, cod_emp)
-                .query(`SELECT etiqueta, solicitud FROM SOLICITUDCAMBIOEXPEDIENTE WHERE cod_emp = @cod_emp AND status = 0 ORDER BY id DESC`);
-            cambios.push(...cambiosResult.recordset);
-        }
-        const nombreCompletoOficial = await pool.request()
-                .input('cod_emp', sql.NVarChar, cod_emp)
-                .query(`SELECT nombres as NombreOficial,apellidos  as ApellidoOficial FROM VSNEMPLE WHERE cod_emp = @cod_emp`);
-        const { NombreOficial, ApellidoOficial } = nombreCompletoOficial.recordset[0] || {};
-
-        // Enviar correo solo si hubo cambios
-        if (cambios.length > 0) {
-            try {
-                await enviarCorreoSolicitudCambioDatos(cod_emp, cambios, NombreOficial, ApellidoOficial);
-            } catch (correoError) {
-                console.error('Error enviando correo de solicitud de cambio de datos:', correoError);
-            }
-        }
-
+        // 1. Responder inmediatamente al cliente para que no espere.
         res.json({ 
             success: true, 
-            message: 'Solicitud de cambio enviada correctamente' ,
+            message: 'Solicitud de cambio enviada correctamente',
             cambios_realizados: result.recordset[0].cambios_realizados
         });
+
+        // 2. Iniciar el proceso de envío de correo en segundo plano.
+        // Usamos una función autoejecutable para no bloquear la respuesta.
+        (async () => {
+            try {
+                if (result.recordset && result.recordset[0] && result.recordset[0].cambios_realizados > 0) {
+                    const pool = await getConnection();
+                    const cambiosResult = await pool.request()
+                        .input('cod_emp', sql.NVarChar, cod_emp)
+                        .query(`SELECT etiqueta, solicitud FROM SOLICITUDCAMBIOEXPEDIENTE WHERE cod_emp = @cod_emp AND status = 0 ORDER BY id DESC`);
+                    
+                    const nombreCompletoOficial = await pool.request()
+                        .input('cod_emp', sql.NVarChar, cod_emp)
+                        .query(`SELECT nombres as NombreOficial, apellidos as ApellidoOficial FROM VSNEMPLE WHERE cod_emp = @cod_emp`);
+                    
+                    const { NombreOficial, ApellidoOficial } = nombreCompletoOficial.recordset[0] || {};
+
+                    if (cambiosResult.recordset.length > 0) {
+                        // Asumiendo que tienes una función para enviar el correo.
+                         await enviarCorreoSolicitudCambioDatos(cod_emp, cambiosResult.recordset, NombreOficial, ApellidoOficial);
+                        console.log('INFO: Proceso de envío de correo iniciado en segundo plano.');
+                    }
+                }
+            } catch (correoError) {
+                // Si el envío de correo falla, solo lo registramos en el log del servidor.
+                // El usuario no se verá afectado porque ya recibió la confirmación.
+                console.error('ERROR (background-task): Falla al enviar correo de solicitud de cambio:', correoError);
+            }
+        })();
+
     } catch (error) {
         console.error('ERROR: ' + JSON.stringify(error));
-        res.status(500).json({ success: false, message: 'Error al enviar la solicitud de cambio' });
+        // Asegurarse de no enviar una respuesta si ya se envió una.
+        if (!res.headersSent) {
+            res.status(500).json({ success: false, message: 'Error al enviar la solicitud de cambio' });
+        }
     }
 });
 

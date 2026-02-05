@@ -208,6 +208,7 @@ export async function enviarCorreoProcesarPermiso(PermisoID) {
 
 export async function enviarCorreoSolicitudCambioDatos(cod_emp, cambios, nombres, apellidos) {
   try {
+    const pool = await getConnection(); // Obtener conexión a la BD
     // Buscar correo de RRHH (puedes cambiar el destinatario si lo necesitas)
     const destinatario = 'capitalhumano@segurosaltamira.com';
     const templatePath = path.join(__dirname, '../templates/correo_Solicitud_CambioDatos.html');
@@ -219,7 +220,7 @@ export async function enviarCorreoSolicitudCambioDatos(cod_emp, cambios, nombres
       },
       {
         filename:'solicitud_datos_personales.gif',
-        path: path.join(publicImagesPath, 'solcitud_datos_personales.gif'),
+        path: path.join(publicImagesPath, 'solicitud_datos_personales.gif'),
         cid:'solicitudDatosPersonales'
       }
     ];
@@ -227,7 +228,23 @@ export async function enviarCorreoSolicitudCambioDatos(cod_emp, cambios, nombres
     // Generar cuerpo dinámico con los cambios solicitados
     let cuerpo = '<ul>';
     for (const cambio of cambios) {
-      cuerpo += `<li><b>${cambio.etiqueta}:</b> ${cambio.solicitud}</li>`;
+      let valor = cambio.solicitud;
+      // Si el campo es "Profesión", buscar la descripción
+      if (cambio.etiqueta === 'Profesión' && valor) {
+        try {
+          const profesionResult = await pool.request()
+            .input('profesionId', sql.Int, valor)
+            .query('SELECT descripcion FROM PROFESIONES WHERE id = @profesionId');
+          
+          if (profesionResult.recordset.length > 0) {
+            valor = profesionResult.recordset[0].descripcion;
+          }
+        } catch (dbError) {
+          console.error(`Error al buscar descripción de la profesión ID ${valor}:`, dbError);
+          // Si falla la consulta, se mantiene el ID como respaldo.
+        }
+      }
+      cuerpo += `<li><strong>${cambio.etiqueta}:</strong> ${valor}</li>`;
     }
     cuerpo += '</ul>';
 
