@@ -3,9 +3,9 @@ import { getConnection, sql } from '../database/connection.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
-import {sendEmail } from '../functions/emailQueue.js';
-import { enviarCorreoVacacionesAprobadas,enviarCorreoVacacionesRechazadas,enviarCorreoSolicitudVacaciones, enviarCorreoSolicitudPermiso, enviarCorreoProcesarVacaciones, enviarCorreoVacacionesProcesadas } from '../functions/enviocorreo.js';
-import {addDays} from 'date-fns';
+import { sendEmail } from '../functions/emailQueue.js';
+import { enviarCorreoVacacionesAprobadas, enviarCorreoVacacionesRechazadas, enviarCorreoSolicitudVacaciones, enviarCorreoSolicitudPermiso, enviarCorreoProcesarVacaciones, enviarCorreoVacacionesProcesadas } from '../functions/enviocorreo.js';
+import { addDays } from 'date-fns';
 import { enviarReporteCorreo } from '../functions/reporteEnvioCorreo.js';
 import { format } from 'date-fns-tz';
 import e from 'express';
@@ -65,7 +65,7 @@ router.get('/vacaciones/vacacionesProcesadas/:cod_emp', async (req, res) => {
 // Se publica una solicitud de vacaciones
 // Modificación del endpoint existente para la inserción de la solicitud de vacaciones
 router.post('/vacaciones', async (req, res) => {
-  const { cod_emp, fechaInicio, fechaFin, fechaRetorno, tipoConfirmacion } = req.body;
+  const { cod_emp, fechaInicio, fechaFin, fechaRetorno, tipoConfirmacion, labelPeriodo } = req.body;
   const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
   console.log('Request POST received for /vacaciones');
   console.log('cod_emp:', cod_emp);
@@ -73,6 +73,7 @@ router.post('/vacaciones', async (req, res) => {
   console.log('fechaFin:', fechaFin);
   console.log('fechaRetorno:', fechaRetorno);
   console.log('tipoConfirmacion:', tipoConfirmacion);
+  console.log('labelPeriodo:', labelPeriodo);
 
   try {
     const pool = await getConnection();
@@ -82,6 +83,7 @@ router.post('/vacaciones', async (req, res) => {
       .input('FechaFin', sql.Date, fechaFin)
       .input('FechaRetorno', sql.Date, fechaRetorno)
       .input('TipoResultado', sql.Int, tipoConfirmacion)
+      .input('comentarios', sql.NVarChar, labelPeriodo)
       .output('Mensaje', sql.NVarChar)
       .execute('[db_accessadmin].[spSolicitarVacaciones]');
 
@@ -94,28 +96,34 @@ router.post('/vacaciones', async (req, res) => {
       return res.status(400).json({ message: mensaje });
     }
 
-    // Enviar correos dependiendo del tipo de confirmación
-    let emailSuccess = true;
-    try {
-      if (tipoConfirmacion === 1 || tipoConfirmacion === 3) {
-        await enviarCorreoSolicitudVacaciones(cod_emp, fechaInicio, fechaRetorno, fechaFin);
-      } else {
-        await enviarCorreoSolicitudVacaciones(cod_emp, fechaInicio, fechaFin, fechaRetorno);
-        await enviarCorreoSolicitudPermiso(cod_emp, addDays(fechaFin, 1), fechaRetorno, "Días de Vacaciones", "Días de Vacaciones");
+    // Enviar correos en segundo plano para no bloquear al usuario
+    (async () => {
+      let emailSuccess = true;
+      try {
+        if (tipoConfirmacion === 1 || tipoConfirmacion === 3) {
+          await enviarCorreoSolicitudVacaciones(cod_emp, fechaInicio, fechaRetorno, fechaFin);
+        } else {
+          await enviarCorreoSolicitudVacaciones(cod_emp, fechaInicio, fechaFin, fechaRetorno);
+          await enviarCorreoSolicitudPermiso(cod_emp, addDays(fechaFin, 1), fechaRetorno, "Días de Vacaciones", "Días de Vacaciones");
+        }
+      } catch (error) {
+        console.error('Error enviando correo en segundo plano:', error);
+        emailSuccess = false;
       }
-    } catch (error) {
-      console.error('Error enviando correo:', error);
-      emailSuccess = false;
-      return res.status(500).json({ message: error.message }); // Enviar el error al cliente
-    }
 
-    console.log('Email enviado:', emailSuccess);
-    await enviarReporteCorreo(cod_emp, ip, 'Solicitud de Vacaciones', emailSuccess, format(new Date(), "yyyy-MM-dd'T'HH:mm:ss", { timeZone: 'America/Caracas' }));
+      try {
+        await enviarReporteCorreo(cod_emp, ip, 'Solicitud de Vacaciones', emailSuccess, format(new Date(), "yyyy-MM-dd'T'HH:mm:ss", { timeZone: 'America/Caracas' }));
+      } catch (error) {
+        console.error('Error guardando reporte de correo:', error);
+      }
+    })();
+
+    // Retorna la respuesta de inmediato sin esperar a los correos
     return res.status(201).json({
       message: 'Vacaciones registradas exitosamente',
-      emailError: !emailSuccess,
+      emailError: false,
     });
-   
+
   } catch (error) {
     console.error('Error registrando vacaciones:', error);
 
@@ -194,7 +202,7 @@ router.put('/vacaciones/:id/approve', async (req, res) => {
     }
 
     const vacacion = result.recordset[0];
-    if (vacacion.Estado !== 'solicitada' ) {
+    if (vacacion.Estado !== 'solicitada') {
       await transaction.rollback();
       return res.status(400).send(`La vacación ya ha sido ${vacacion.Estado.toLowerCase()}`);
     }
@@ -205,16 +213,16 @@ router.put('/vacaciones/:id/approve', async (req, res) => {
       .execute('sp_AprobarVacaciones');
 
     await transaction.commit();
-    
-      // Enviar correo de procesamiento de vacaciones
+
+    // Enviar correo de procesamiento de vacaciones
     let emailSuccess = true;
-    try{
+    try {
       await enviarCorreoProcesarVacaciones(id);
       await enviarCorreoVacacionesAprobadas(id);
-    }catch(error){
-       emailSuccess = false;
+    } catch (error) {
+      emailSuccess = false;
     }
-    await enviarReporteCorreo(cod_supervisor, ip, 'Procesar Vacaciones', emailSuccess, format(new Date(), "yyyy-MM-dd'T'HH:mm:ss", { timeZone: 'America/Caracas' })) ;
+    await enviarReporteCorreo(cod_supervisor, ip, 'Procesar Vacaciones', emailSuccess, format(new Date(), "yyyy-MM-dd'T'HH:mm:ss", { timeZone: 'America/Caracas' }));
     res.send('Vacaciones aprobadas exitosamente');
   } catch (error) {
     console.error('Error aprobando vacaciones:', error);
@@ -231,9 +239,9 @@ router.put('/vacaciones/:id/process', async (req, res) => {
   const fechaInicio = new Date(sdDesde);
   const fechaFin = new Date(sdHasta);
   const iDias = 0;
-  
+
   console.log('Request PUT received for /vacaciones/:id/process');
-  
+
   try {
     const pool = await getConnection();
     const transaction = new sql.Transaction(pool);
@@ -242,7 +250,7 @@ router.put('/vacaciones/:id/process', async (req, res) => {
 
     const result = await transaction.request()
       .input('id', sql.Int, id)
-      .execute('spObtenerEstadoVacacionPorId');
+      .execute('spObtenerVacacionPorId');
 
     if (result.recordset.length === 0) {
       await transaction.rollback();
@@ -255,6 +263,8 @@ router.put('/vacaciones/:id/process', async (req, res) => {
       return res.status(400).send(`La vacación ya ha sido ${vacacion.Estado.toLowerCase()}`);
     }
 
+    const sMotivo = vacacion.comentarios || null;
+
     await transaction.request()
       .input('sCod_emp', sql.Char(17), sCod_emp)
       .input('sCo_Us_In', sql.Char(250), cod_RRHH)
@@ -262,12 +272,13 @@ router.put('/vacaciones/:id/process', async (req, res) => {
       .input('sdHasta', sql.SmallDateTime, sdHasta)
       .input('iDias', sql.Int, iDias)
       .input('VACACIONID', sql.Int, id)
+      .input('sMotivo', sql.VarChar, sMotivo)
       .execute('dbo.pInsertarVacacion');
 
     await transaction.commit();
-    
-    await enviarCorreoVacacionesProcesadas(id);
-
+    (async () => {
+      await enviarCorreoVacacionesProcesadas(id);
+    })();
     res.send('Vacaciones procesadas exitosamente');
   } catch (error) {
     console.error('Error procesando vacaciones:', error);
@@ -305,7 +316,7 @@ router.put('/vacaciones/:id/reject1', async (req, res) => {
       .input('id', sql.Int, id)
       .input('cod_supervisor', sql.Char, cod_supervisor)
       .execute('sp_RechazarVacacionesSupervisor');
-      await enviarCorreoVacacionesRechazadas(id);
+    await enviarCorreoVacacionesRechazadas(id);
     await transaction.commit();
     res.send('Vacaciones rechazadas exitosamente');
   } catch (error) {
@@ -493,7 +504,7 @@ router.get('/vacaciones/CalculrDiasNoDisfrutadosVacaciones/:cod_emp', async (req
 
 router.put('/retornoVacaciones', async (req, res) => {
   const { VacacionID, FechaRetorno } = req.body;
-  
+
   if (!VacacionID || isNaN(VacacionID)) {
     return res.status(400).json({ error: 'ID inválido' });
   }
@@ -502,7 +513,7 @@ router.put('/retornoVacaciones', async (req, res) => {
     return res.status(400).json({ error: 'Fecha de retorno es requerida' });
   }
 
-  
+
   try {
     const pool = await getConnection();
     await pool.request()
@@ -512,7 +523,7 @@ router.put('/retornoVacaciones', async (req, res) => {
     res.json({ message: 'Vacaciones devueltas exitosamente' });
   } catch (error) {
     console.error('Error devolviendo vacaciones:', error);
-    res.status(500).json({ error: 'Error devolviendo vacaciones', message: error.message});
+    res.status(500).json({ error: 'Error devolviendo vacaciones', message: error.message });
   }
 });
 
@@ -576,7 +587,7 @@ router.post('/vacaciones/enviarCorreo', async (req, res) => {
         to: supervisor.correo,
         subject: `Solicitud de Vacaciones de ${trabajador}`,
         html: htmlContent,
-        attachments:attachments
+        attachments: attachments
       };
 
       // Enviar el correo directamente
@@ -613,11 +624,11 @@ router.get('/vacaciones/periodos/id/:cod_emp', async (req, res) => {
 router.get('/vacaciones/InfoConfirmacionSolicitudVacaciones', async (req, res) => {
   const { fechaInicio, fechaFin, fechaRetorno } = req.query;
   console.log('Request GET received for /vacaciones/InfoConfirmacionSolicitudVacaciones');
-  
+
   console.log('fechaInicio:', fechaInicio);
   console.log('fechaRetorno:', fechaRetorno);
   console.log('fechaFin:', fechaFin);
-  
+
 
   try {
     const pool = await getConnection();
@@ -627,14 +638,14 @@ router.get('/vacaciones/InfoConfirmacionSolicitudVacaciones', async (req, res) =
       .input('FechaRetorno', sql.Date, fechaRetorno)
       .output('TipoResultado', sql.Int)
       .output('Mensaje', sql.NVarChar)
-      .output('DiasADisfrutar',sql.Int)
+      .output('DiasADisfrutar', sql.Int)
       .execute('[db_accessadmin].[sp_InfoConfirmacionSolicitudVacaciones]');
 
     const tipoResultado = result.output.TipoResultado;
     const mensaje = result.output.Mensaje;
-    const diasDisfrutar =result.output.DiasADisfrutar;
+    const diasDisfrutar = result.output.DiasADisfrutar;
 
-    res.json({ TipoResultado: tipoResultado, Mensaje: mensaje,diasDisfrutar :diasDisfrutar });
+    res.json({ TipoResultado: tipoResultado, Mensaje: mensaje, diasDisfrutar: diasDisfrutar });
   } catch (error) {
     console.error('Error trayendo el mensaje de confirmación:', error);
     res.status(500).json({ error: 'Hubo un error al querer confirmar la solicitud de vacaciones', message: error.message });
@@ -642,13 +653,13 @@ router.get('/vacaciones/InfoConfirmacionSolicitudVacaciones', async (req, res) =
 });
 
 router.post('/vacaciones/revisionPeriodo', async (req, res) => {
-  const {  periodos } = req.body;
+  const { periodos } = req.body;
   try {
     console.log('Request POST received for /vacaciones/revisionPeriodo');
     console.log(periodos.join(','));
     const pool = await getConnection();
     const result = await pool.request()
-      .input('NumeroPeriodos',sql.Int, periodos.length)
+      .input('NumeroPeriodos', sql.Int, periodos.length)
       .input('PERIODOS', sql.VarChar, periodos.join(',')) // Convertir la lista de periodos en una cadena separada por comas
       .execute('db_accessadmin.spVerificarPeriodosSeleccionados');
 
