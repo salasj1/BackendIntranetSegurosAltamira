@@ -258,7 +258,14 @@ router.put('/permisos/:PermisosID/reject1', async (req, res) => {
     const resultado = result.output.RESULTADO;
 
     if (status === 1) {
-      await enviarCorreoPermisoRechazado(PermisosID);
+      // Envío de correo sin bloquear la repuesta (en segundo plano)
+      (async () => {
+        try {
+          await enviarCorreoPermisoRechazado(PermisosID);
+        } catch (emailError) {
+          console.error('Error enviando correo de rechazo (reject1):', emailError);
+        }
+      })();
       res.send(resultado);
     } else {
       res.status(400).send(resultado);
@@ -287,7 +294,14 @@ router.put('/permisos/:PermisosID/reject2', async (req, res) => {
     const resultado = result.output.RESULTADO;
 
     if (status === 1) {
-      await enviarCorreoPermisoRechazado(PermisosID);
+       // Envío de correo sin bloquear la repuesta principal (en segundo plano)
+       (async () => {
+         try {
+           await enviarCorreoPermisoRechazado(PermisosID);
+         } catch (emailError) {
+           console.error('Error enviando correo de rechazo (reject2):', emailError);
+         }
+       })();
       res.send(resultado);
     } else {
       res.status(400).send(resultado);

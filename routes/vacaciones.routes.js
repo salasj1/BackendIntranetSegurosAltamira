@@ -316,8 +316,18 @@ router.put('/vacaciones/:id/reject1', async (req, res) => {
       .input('id', sql.Int, id)
       .input('cod_supervisor', sql.Char, cod_supervisor)
       .execute('sp_RechazarVacacionesSupervisor');
-    await enviarCorreoVacacionesRechazadas(id);
+    
     await transaction.commit();
+
+    // Enviar en segundo plano
+    (async () => {
+      try {
+        await enviarCorreoVacacionesRechazadas(id);
+      } catch (emailError) {
+        console.error('Error enviando correo post-rechazo (reject1):', emailError);
+      }
+    })();
+
     res.send('Vacaciones rechazadas exitosamente');
   } catch (error) {
     console.error('Error rechazando vacaciones:', error);
@@ -355,8 +365,19 @@ router.put('/vacaciones/:id/reject2', async (req, res) => {
       .input('id', sql.Int, id)
       .input('cod_RRHH', sql.Char, cod_RRHH)
       .execute('sp_RechazarVacacionesRRHH');
-    await enviarCorreoVacacionesRechazadas(id);
+    
     await transaction.commit();
+
+    // El correo se envía AFTER del commit para evitar deadlocks con la transacción SERIALIZABLE y en SEGUNDO PLANO
+    (async () => {
+      try {
+        await enviarCorreoVacacionesRechazadas(id);
+      } catch (emailError) {
+        console.error('Error enviando correo post-rechazo:', emailError);
+        // No fallamos la request porque la operación de BD ya fue exitosa
+      }
+    })();
+
     res.send('Vacaciones rechazadas exitosamente');
   } catch (error) {
     console.error('Error rechazando vacaciones:', error);
