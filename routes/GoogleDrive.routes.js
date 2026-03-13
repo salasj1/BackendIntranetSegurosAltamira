@@ -26,7 +26,7 @@ router.get('/buscar-archivos/carpeta/:cod_emp', async (req, res) => {
       spaces: 'drive',
       fields: 'files(id, name, mimeType, webContentLink, webViewLink)',
       supportsAllDrives: true,
-    includeItemsFromAllDrives: true
+      includeItemsFromAllDrives: true
     });
 
     const archivos = response.data.files;
@@ -51,7 +51,7 @@ router.get('/tiposDocumentos', async (req, res) => {
 });
 
 router.get('/tiposDocumentos/Empleado/:cod_emp', async (req, res) => {
-  try {  
+  try {
     const pool = await getConnection();
     const result = await pool.request()
       .input('cod_emp', sql.VarChar, req.params.cod_emp)
@@ -80,7 +80,7 @@ router.post('/importar-documentos', async (req, res) => {
 
 // Función para buscar la carpeta por cod_emp
 async function buscarCarpetaPorCodEmp(drive, cod_emp) {
-  const parentFolderId = process.env.VITE_GOOGLE_DRIVE_FOLDER_ID ;
+  const parentFolderId = process.env.VITE_GOOGLE_DRIVE_FOLDER_ID;
   try {
     const response = await drive.files.list({
       q: `'${parentFolderId}' in parents and name='${cod_emp}' and mimeType='application/vnd.google-apps.folder'  `,
@@ -169,6 +169,19 @@ router.post('/subir-varios-archivos', upload.array('archivos'), async (req, res)
     }
 
     console.log('Request body:', fecha_actualizacion);
+
+    let usaFechaVencimiento = false;
+    try {
+      const poolDocs = await getConnection();
+      const resultDocs = await poolDocs.request().execute('spObtenerTipoDocumentos');
+      const tipoDoc = resultDocs.recordset.find(doc => doc.nombre === tipo_documento);
+      if (tipoDoc && (tipoDoc.fechaVencimiento == 1 || tipoDoc.fechaVencimiento === true)) {
+        usaFechaVencimiento = true;
+      }
+    } catch (err) {
+      console.error('Error verificando fechaVencimiento en BD:', err);
+    }
+
     // Subir cada archivo
     const fechaActual = new Date();
     const fileIds = [];
@@ -179,7 +192,7 @@ router.post('/subir-varios-archivos', upload.array('archivos'), async (req, res)
       const formattedDate = `${fechaActual.getDate().toString().padStart(2, '0')}-${(fechaActual.getMonth() + 1).toString().padStart(2, '0')}-${fechaActual.getFullYear()}`;
       console.log('fecha Vencimiento: ', fecha_vencimiento);
       if (
-        (tipo_documento === "Cedula" || tipo_documento === "Rif") &&
+        usaFechaVencimiento &&
         fecha_vencimiento
       ) {
         // Formatear la fecha de vencimiento a DD-MM-YYYY
@@ -328,9 +341,22 @@ router.post('/actualizar-archivo', upload.single('archivo'), async (req, res) =>
     const fechaActual = new Date();
     const formattedDate = `${fechaActual.getDate().toString().padStart(2, '0')}-${(fechaActual.getMonth() + 1).toString().padStart(2, '0')}-${fechaActual.getFullYear()}`;
     let nombreArchivo = `${cedulaNumerica}_${tipo_documento}_${formattedDate}`;
-    // Si es Cedula o Rif y hay fecha de vencimiento, agregarla
+
+    let usaFechaVencimiento = false;
+    try {
+      const poolDocs = await getConnection();
+      const resultDocs = await poolDocs.request().execute('spObtenerTipoDocumentos');
+      const tipoDoc = resultDocs.recordset.find(doc => doc.nombre === tipo_documento);
+      if (tipoDoc && (tipoDoc.fechaVencimiento == 1 || tipoDoc.fechaVencimiento === true)) {
+        usaFechaVencimiento = true;
+      }
+    } catch (err) {
+      console.error('Error verificando fechaVencimiento en BD:', err);
+    }
+
+    // Si requiere fecha de vencimiento y esta presente, agregarla
     if (
-      (tipo_documento === "Cedula" || tipo_documento === "Rif") &&
+      usaFechaVencimiento &&
       fecha_vencimiento
     ) {
       // Formatear la fecha de vencimiento a DD-MM-YYYY
