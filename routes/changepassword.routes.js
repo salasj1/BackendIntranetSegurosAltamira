@@ -36,26 +36,23 @@ router.post('/verify/:username', async (req, res) => {
 router.put('/changepassword1/:cod_emp', async (req, res) => {
     let { cod_emp } = req.params;
     const { correo } = req.body;
-    
+
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
 
     console.log(`Solicitud de cambio de contraseña desde la IP: ${ip}`);
     try {
         // Generar el código temporal
-        let codigoTemporal = Array(10).fill(0).map(() => {
-            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+[]{}<>?';
-            return chars.charAt(Math.floor(Math.random() * chars.length));
-        }).join('').replace(/\s/g, '').slice(0, 10);
-        console.log("El codigo temporal es " + codigoTemporal);
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        const codigoTemporal = Array.from({ length: 10 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+
         const codigoTemporalEncriptado = await encryptPassword(codigoTemporal);
-        console.log("El codigo temporal encriptado es " + codigoTemporalEncriptado);
-        
+
         // Guardar el código temporal en la base de datos
         const pool = await getConnection();
         await pool.request()
             .input('cod_emp', sql.Char, cod_emp)
             .input('codigoTemporal', sql.VarChar, codigoTemporalEncriptado)
-            .execute('spGuardarCodigoTemporal'); 
+            .execute('spGuardarCodigoTemporal');
 
         // Leer la plantilla de correo
         const templatePath = path.join(__dirname, "../templates/correo_Codigo_Validacion.html");
@@ -72,7 +69,7 @@ router.put('/changepassword1/:cod_emp', async (req, res) => {
 
         // Enviar el correo
         const mailResult = await sendMailWithRetry(mailOptions);
-        
+
         await enviarReporteCorreo(cod_emp, ip, 'Cambio de contraseña', mailResult.success, mailResult.fecha);
 
         if (mailResult.success) {
@@ -96,7 +93,7 @@ router.post('/verifycode/:username', async (req, res) => {
             return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
         }
         const hashedPassword = user.password; // Asegúrate de que estás obteniendo el código temporal correcto
-        const isMatch = await bcrypt.compare(codigoTemporal, hashedPassword); 
+        const isMatch = await bcrypt.compare(codigoTemporal, hashedPassword);
         if (isMatch) {
             res.json({ success: true, message: 'Código verificado correctamente' });
             console.log("Código verificado correctamente");
@@ -112,9 +109,9 @@ router.post('/verifycode/:username', async (req, res) => {
 
 router.put('/changepassword2/:cod_emp', async (req, res) => {
     let { cod_emp } = req.params;
-    const {  password, confirmpassword } = req.body;
+    const { password, confirmpassword } = req.body;
 
-    if ( !password || !confirmpassword) {
+    if (!password || !confirmpassword) {
         return res.status(400).json({ success: false, message: 'Todos los campos son obligatorios' });
     }
     if (password !== confirmpassword) {

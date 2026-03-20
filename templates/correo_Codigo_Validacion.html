@@ -1,42 +1,50 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <style>
         .email-container {
             font-family: Arial, sans-serif;
             /* background: linear-gradient(to right, rgb(14,70,150), rgb(12,68,142)); */
             padding: 20px;
-            max-width:60em; width: 100%;
+            max-width: 60em;
+            width: 100%;
         }
+
         .email-content {
             background-color: #ffffff;
             border-radius: 10px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            border:1px solid rgb(0,0,0, 0.1);
+            border: 1px solid rgb(0, 0, 0, 0.1);
             padding-bottom: 0px;
         }
+
         .email-conten-info {
             padding: 20px;
         }
+
         .email-header {
             font-size: 18px;
             font-weight: bold;
             color: #333333;
             margin-bottom: 20px;
         }
+
         .email-body {
             font-size: 16px;
             color: #555555;
             line-height: 1.5;
         }
+
         .email-footer {
             margin-top: 20px;
             font-size: 14px;
             color: #777777;
         }
+
         .email-image-footer {
             display: flex;
-            width: calc(100%);
+
             flex-grow: 1;
             font-size: 14px;
             color: #777777;
@@ -44,16 +52,18 @@
         }
     </style>
 </head>
-<body >
+
+<body>
     <div class="email-container">
         <div class="email-content">
-        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse; background-color: #003f9e; border-radius: 10px 10px 0px 0px;">
-        <tr>
-            <td style="padding: 16px 0 16px 0; " align="center" >
-            <!-- <img src="cid:logoEmpresa" alt="logo-empresa" border="0" width="75"> -->
-            </td>
-        </tr>
-        </table>
+            <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
+                style="border-collapse: collapse; background-color: #003f9e; border-radius: 10px 10px 0px 0px;">
+                <tr>
+                    <td style="padding: 16px 0 16px 0; " align="center">
+                        <!-- <img src="cid:logoEmpresa" alt="logo-empresa" border="0" width="75"> -->
+                    </td>
+                </tr>
+            </table>
             <div class="email-conten-info">
                 <div class="email-header">Código de Validación</div>
                 <div class="email-body">
@@ -62,20 +72,23 @@
                     <table width="100%" cellpadding="0" cellspacing="0" style="margin: 20px 0;">
                         <tr>
                             <td align="center">
-                                <p style="display: inline-block; max-width: 100%; font-size: 40px; font-weight: bold; color: #003896; text-align: center; background-color: aliceblue; border: 1px solid #003896; padding: 10px 30px; border-radius: 6px; margin: 0; box-sizing: border-box; word-break: break-all;">
-                                    ${codigoTemporal}
-                                </p>
+                                <p
+                                    style="display: inline-block; font-size: 40px; font-weight: bold; color: #003896; text-align: center; background-color: aliceblue; border: 1px solid #003896; padding: 10px 0; border-radius: 6px; margin: 0; font-family: 'Courier New', Courier, monospace; letter-spacing: 4px; white-space: nowrap;">
+                                    ${codigoTemporal}</p>
                             </td>
                         </tr>
                     </table>
-                    <p>Por favor, no comparta este código con nadie. Cabe aclarar que su contraseña anterior ya no existe en el sistema.</p>
+                    <p>Por favor, no comparta este código con nadie. Cabe aclarar que su contraseña anterior ya no
+                        existe en el sistema.</p>
                 </div>
                 <div class="email-footer">
                     <p>Intranet de Seguros Altamira</p>
                 </div>
             </div>
-            <img src="https://media.licdn.com/dms/image/v2/D4E3DAQF0mlb0e_m8-Q/image-scale_191_1128/image-scale_191_1128/0/1678969137498/seguros_altamira_cover?e=2147483647&v=beta&t=oOSJm4jhoR01nmRztPezxIuPIdnn2WWJ8kt4j3tUYuE" class="email-image-footer" alt="Seguros Altamira" style="text-align: left;">
+            <img src="https://media.licdn.com/dms/image/v2/D4E3DAQF0mlb0e_m8-Q/image-scale_191_1128/image-scale_191_1128/0/1678969137498/seguros_altamira_cover?e=2147483647&v=beta&t=oOSJm4jhoR01nmRztPezxIuPIdnn2WWJ8kt4j3tUYuE"
+                class="email-image-footer" alt="Seguros Altamira" style="text-align: left; width: 100%;">
         </div>
     </div>
 </body>
+
 </html>
