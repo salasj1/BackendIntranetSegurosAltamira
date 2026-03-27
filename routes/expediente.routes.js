@@ -160,34 +160,44 @@ router.post('/rutograma', async (req, res) => {
       .input('DetallesActividadesRegreso', sql.NVarChar(sql.MAX), JSON.stringify(detallesActividadesRegreso || {}))
       .execute('spGuardarRutograma'); // Debes crear/ajustar este SP en SQL
 
-    // 1. Ejecutar la función para obtener el JSON del correo de nuevo rutograma
-    const correoResult = await pool.request()
-      .input('cod_emp', sql.Char, cod_emp)
-      .query('SELECT dbo.ftCorreoNuevoRutograma(@cod_emp) AS correo_json');
+    // 1. Responder inmediatamente al cliente para que no espere.
+    res.json({ success: true, message: 'Rutograma guardado correctamente' });
 
-    const correoJsonStr = correoResult.recordset[0]?.correo_json;
-    if (!correoJsonStr) {
-      return res.status(500).json({ success: false, message: 'No se pudo generar el correo para el nuevo rutograma.' });
-    }
+    // 2. Iniciar el proceso de envío de correo en segundo plano.
+    (async () => {
+      try {
+        const bgPool = await getConnection();
+        // Ejecutar la función para obtener el JSON del correo de nuevo rutograma
+        const correoResult = await bgPool.request()
+          .input('cod_emp', sql.Char, cod_emp)
+          .query('SELECT dbo.ftCorreoNuevoRutograma(@cod_emp) AS correo_json');
 
-    const correoData = JSON.parse(correoJsonStr);
+        const correoJsonStr = correoResult.recordset[0]?.correo_json;
+        if (!correoJsonStr) {
+          console.error('ERROR (background-task): No se pudo generar el correo para el nuevo rutograma.');
+          return;
+        }
 
-    // 2. Enviar el correo usando los datos del JSON
-    try {
-      await enviarCorreoRutograma({
-        tipo: 'nuevo',
-        destinatario: correoData.correo_destinatario,
-        subject: correoData.subject,
-        body: correoData.body
-      });
-    } catch (error) {
-      console.error('Error enviando correo de nuevo rutograma:', error);
-      res.status(500).json({ success: false, message: 'Error enviando el correo del nuevo rutograma.' });
-    }
-    res.json({ success: true });
+        const correoData = JSON.parse(correoJsonStr);
+
+        // Enviar el correo usando los datos del JSON
+        await enviarCorreoRutograma({
+          tipo: 'nuevo',
+          destinatario: correoData.correo_destinatario,
+          subject: correoData.subject,
+          body: correoData.body
+        });
+        console.log('INFO: Correo de nuevo rutograma enviado en segundo plano.');
+      } catch (error) {
+        console.error('ERROR (background-task): Falla al enviar correo de nuevo rutograma:', error);
+      }
+    })();
+
   } catch (error) {
     console.error('ERROR: ' + JSON.stringify(error));
-    res.status(500).json({ success: false, message: 'Error al guardar las rutas' });
+    if (!res.headersSent) {
+      res.status(500).json({ success: false, message: 'Error al guardar las rutas' });
+    }
   }
 });
 
