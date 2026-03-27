@@ -9,92 +9,92 @@ const router = express.Router();
 
 // Ruta para obtener los datos personales de un expediente
 router.get('/getDatosPersonales/:cod_emp', async (req, res) => {
-    const { cod_emp } = req.params;
-    console.log(`Request GET received for /getDatosPersonales/${cod_emp}`);
-    try {
-        const pool = await getConnection();
-        const result = await pool.request()
-            .input('cod_emp', sql.NVarChar, cod_emp)
-            .execute('spObtenerDatosExpediente');
+  const { cod_emp } = req.params;
+  console.log(`Request GET received for /getDatosPersonales/${cod_emp}`);
+  try {
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('cod_emp', sql.NVarChar, cod_emp)
+      .execute('spObtenerDatosExpediente');
 
-        if (result.recordset.length > 0) {
-            const expediente = result.recordset[0];
-            res.json({ 
-                success: true, 
-                expediente
-            });
-        } else {
-            res.status(404).json({ success: false, message: 'No se encuentra el expediente' });
-        }
-    } catch (error) {
-        console.error('ERROR: ' + JSON.stringify(error));
-        res.status(500).json({ success: false, message: 'Error de conexion' });
+    if (result.recordset.length > 0) {
+      const expediente = result.recordset[0];
+      res.json({
+        success: true,
+        expediente
+      });
+    } else {
+      res.status(404).json({ success: false, message: 'No se encuentra el expediente' });
     }
+  } catch (error) {
+    console.error('ERROR: ' + JSON.stringify(error));
+    res.status(500).json({ success: false, message: 'Error de conexion' });
+  }
 });
 
 router.post('/SolicitarCambioDatosPersonales', async (req, res) => {
-    const { cod_emp, cedula, nombres, apellidos, rif, edocivil, email, fechaNacimiento, telefonoCelular, direccion, profesion } = req.body;
-    console.log(`Request POST received for /SolicitarCambioDatosPersonales `);
+  const { cod_emp, cedula, nombres, apellidos, rif, edocivil, email, fechaNacimiento, telefonoCelular, direccion, profesion } = req.body;
+  console.log(`Request POST received for /SolicitarCambioDatosPersonales `);
 
-    try {
-        const pool = await getConnection();
-        const result = await pool.request()
+  try {
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('cod_emp', sql.NVarChar, cod_emp)
+      .input('cedula', sql.NVarChar, cedula)
+      .input('nombres', sql.NVarChar, nombres)
+      .input('apellidos', sql.NVarChar, apellidos)
+      .input('rif', sql.NVarChar, rif)
+      .input('edocivil', sql.NVarChar, edocivil)
+      .input('email', sql.NVarChar, email)
+      .input('fechaNacimiento', sql.NVarChar, fechaNacimiento)
+      .input('telefonoCelular', sql.NVarChar, telefonoCelular)
+      .input('direccion', sql.NVarChar, direccion)
+      .input('profesion', sql.NVarChar, profesion)
+      .execute('spSolicitarCambioDatosPersonales');
+
+    // 1. Responder inmediatamente al cliente para que no espere.
+    res.json({
+      success: true,
+      message: 'Solicitud de cambio enviada correctamente',
+      cambios_realizados: result.recordset[0].cambios_realizados
+    });
+
+    // 2. Iniciar el proceso de envío de correo en segundo plano.
+    // Usamos una función autoejecutable para no bloquear la respuesta.
+    (async () => {
+      try {
+        if (result.recordset && result.recordset[0] && result.recordset[0].cambios_realizados > 0) {
+          const pool = await getConnection();
+          const cambiosResult = await pool.request()
             .input('cod_emp', sql.NVarChar, cod_emp)
-            .input('cedula', sql.NVarChar, cedula)
-            .input('nombres', sql.NVarChar, nombres)
-            .input('apellidos', sql.NVarChar, apellidos)
-            .input('rif', sql.NVarChar, rif)
-            .input('edocivil', sql.NVarChar, edocivil)
-            .input('email', sql.NVarChar, email)
-            .input('fechaNacimiento', sql.NVarChar, fechaNacimiento)
-            .input('telefonoCelular', sql.NVarChar, telefonoCelular)
-            .input('direccion', sql.NVarChar, direccion)
-            .input('profesion', sql.NVarChar, profesion)
-            .execute('spSolicitarCambioDatosPersonales');
+            .query(`SELECT etiqueta, solicitud FROM SOLICITUDCAMBIOEXPEDIENTE WHERE cod_emp = @cod_emp AND status = 0 ORDER BY id DESC`);
 
-        // 1. Responder inmediatamente al cliente para que no espere.
-        res.json({ 
-            success: true, 
-            message: 'Solicitud de cambio enviada correctamente',
-            cambios_realizados: result.recordset[0].cambios_realizados
-        });
+          const nombreCompletoOficial = await pool.request()
+            .input('cod_emp', sql.NVarChar, cod_emp)
+            .query(`SELECT nombres as NombreOficial, apellidos as ApellidoOficial FROM VSNEMPLE WHERE cod_emp = @cod_emp`);
 
-        // 2. Iniciar el proceso de envío de correo en segundo plano.
-        // Usamos una función autoejecutable para no bloquear la respuesta.
-        (async () => {
-            try {
-                if (result.recordset && result.recordset[0] && result.recordset[0].cambios_realizados > 0) {
-                    const pool = await getConnection();
-                    const cambiosResult = await pool.request()
-                        .input('cod_emp', sql.NVarChar, cod_emp)
-                        .query(`SELECT etiqueta, solicitud FROM SOLICITUDCAMBIOEXPEDIENTE WHERE cod_emp = @cod_emp AND status = 0 ORDER BY id DESC`);
-                    
-                    const nombreCompletoOficial = await pool.request()
-                        .input('cod_emp', sql.NVarChar, cod_emp)
-                        .query(`SELECT nombres as NombreOficial, apellidos as ApellidoOficial FROM VSNEMPLE WHERE cod_emp = @cod_emp`);
-                    
-                    const { NombreOficial, ApellidoOficial } = nombreCompletoOficial.recordset[0] || {};
+          const { NombreOficial, ApellidoOficial } = nombreCompletoOficial.recordset[0] || {};
 
-                    if (cambiosResult.recordset.length > 0) {
-                        // Asumiendo que tienes una función para enviar el correo.
-                         await enviarCorreoSolicitudCambioDatos(cod_emp, cambiosResult.recordset, NombreOficial, ApellidoOficial);
-                        console.log('INFO: Proceso de envío de correo iniciado en segundo plano.');
-                    }
-                }
-            } catch (correoError) {
-                // Si el envío de correo falla, solo lo registramos en el log del servidor.
-                // El usuario no se verá afectado porque ya recibió la confirmación.
-                console.error('ERROR (background-task): Falla al enviar correo de solicitud de cambio:', correoError);
-            }
-        })();
-
-    } catch (error) {
-        console.error('ERROR: ' + JSON.stringify(error));
-        // Asegurarse de no enviar una respuesta si ya se envió una.
-        if (!res.headersSent) {
-            res.status(500).json({ success: false, message: 'Error al enviar la solicitud de cambio' });
+          if (cambiosResult.recordset.length > 0) {
+            // Asumiendo que tienes una función para enviar el correo.
+            await enviarCorreoSolicitudCambioDatos(cod_emp, cambiosResult.recordset, NombreOficial, ApellidoOficial);
+            console.log('INFO: Proceso de envío de correo iniciado en segundo plano.');
+          }
         }
+      } catch (correoError) {
+        // Si el envío de correo falla, solo lo registramos en el log del servidor.
+        // El usuario no se verá afectado porque ya recibió la confirmación.
+        console.error('ERROR (background-task): Falla al enviar correo de solicitud de cambio:', correoError);
+      }
+    })();
+
+  } catch (error) {
+    console.error('ERROR: ' + JSON.stringify(error));
+    // Asegurarse de no enviar una respuesta si ya se envió una.
+    if (!res.headersSent) {
+      res.status(500).json({ success: false, message: 'Error al enviar la solicitud de cambio' });
     }
+  }
 });
 
 router.post('/rutograma', async (req, res) => {
@@ -132,7 +132,7 @@ router.post('/rutograma', async (req, res) => {
     console.log(req.body);
     console.log(JSON.stringify(req.body));
     // Guardar rutograma completo (ida y regreso)
-    /* await pool.request()
+    await pool.request()
       .input('cod_emp', sql.Char, cod_emp)
       .input('RutasOficina', sql.NVarChar(sql.MAX), JSON.stringify(RutaaOficina))
       .input('RutasCasa', sql.NVarChar(sql.MAX), JSON.stringify(RutaaCasa))
@@ -159,7 +159,7 @@ router.post('/rutograma', async (req, res) => {
       .input('ActividadesSeleccionadasRegreso', sql.NVarChar(sql.MAX), JSON.stringify(actividadesSeleccionadasRegreso || []))
       .input('DetallesActividadesRegreso', sql.NVarChar(sql.MAX), JSON.stringify(detallesActividadesRegreso || {}))
       .execute('spGuardarRutograma'); // Debes crear/ajustar este SP en SQL
- */
+
     // 1. Ejecutar la función para obtener el JSON del correo de nuevo rutograma
     const correoResult = await pool.request()
       .input('cod_emp', sql.Char, cod_emp)
@@ -243,7 +243,7 @@ router.get('/rutas/:cod_emp', async (req, res) => {
 
 router.put('/actualizarDatosPersonales/:id', async (req, res) => {
   const { id } = req.params;
-  
+
 
   try {
     const pool = await getConnection();
@@ -391,74 +391,74 @@ router.get('/rutograma-completo/:cod_emp', async (req, res) => {
 
 // Ruta para obtener los datos del expediente de una ruta (Ida y Regreso)
 router.get('/getDatosRutas/:tipo/:cod_emp', async (req, res) => {
-    const { cod_emp, tipo } = req.params;
-    console.log(`Request GET received for /getDatosRuta/${tipo}/${cod_emp}`);
+  const { cod_emp, tipo } = req.params;
+  console.log(`Request GET received for /getDatosRuta/${tipo}/${cod_emp}`);
 
-    if (tipo !== 'Ida' && tipo !== 'Regreso') {
-        return res.status(400).json({ success: false, message: 'Tipo de ruta inválido. Debe ser "Ida" o "Regreso".' });
+  if (tipo !== 'Ida' && tipo !== 'Regreso') {
+    return res.status(400).json({ success: false, message: 'Tipo de ruta inválido. Debe ser "Ida" o "Regreso".' });
+  }
+
+  try {
+    const pool = await getConnection();
+    const sp = tipo === 'Ida' ? 'spObtenerDatosRutasIda' : 'spObtenerDatosRutaRegreso';
+    const result = await pool.request()
+      .input('cod_emp', sql.NVarChar, cod_emp)
+      .execute(sp);
+
+    if (result.recordset.length > 0) {
+      const ruta = result.recordset[0];
+      res.json({
+        success: true,
+        ruta
+      });
+    } else {
+      res.status(404).json({ success: false, message: 'No se encuentra la ruta' });
     }
-
-    try {
-        const pool = await getConnection();
-        const sp = tipo === 'Ida' ? 'spObtenerDatosRutasIda' : 'spObtenerDatosRutaRegreso';
-        const result = await pool.request()
-            .input('cod_emp', sql.NVarChar, cod_emp)
-            .execute(sp);
-
-        if (result.recordset.length > 0) {
-            const ruta = result.recordset[0];
-            res.json({ 
-                success: true, 
-                ruta
-            });
-        } else {
-            res.status(404).json({ success: false, message: 'No se encuentra la ruta' });
-        }
-    } catch (error) {
-        console.error('ERROR: ' + JSON.stringify(error));
-        res.status(500).json({ success: false, message: 'Error de conexion' });
-    }
+  } catch (error) {
+    console.error('ERROR: ' + JSON.stringify(error));
+    res.status(500).json({ success: false, message: 'Error de conexion' });
+  }
 });
 
 //Ruta para mostrar los tipos de transporte
 router.get('/getTiposTransporte', async (req, res) => {
-    try {
-        const pool = await getConnection();
-        const result = await pool.request()
-            .execute('spObtenerTiposTransporte');
+  try {
+    const pool = await getConnection();
+    const result = await pool.request()
+      .execute('spObtenerTiposTransporte');
 
-        if (result.recordset.length > 0) {
-            res.json({ 
-                success: true, 
-                tiposTransporte: result.recordset
-            });
-        } else {
-            res.status(404).json({ success: false, message: 'No se encontraron tipos de transporte' });
-        }
-    } catch (error) {
-        console.error('ERROR: ' + JSON.stringify(error));
-        res.status(500).json({ success: false, message: 'Error de conexion' });
+    if (result.recordset.length > 0) {
+      res.json({
+        success: true,
+        tiposTransporte: result.recordset
+      });
+    } else {
+      res.status(404).json({ success: false, message: 'No se encontraron tipos de transporte' });
     }
+  } catch (error) {
+    console.error('ERROR: ' + JSON.stringify(error));
+    res.status(500).json({ success: false, message: 'Error de conexion' });
+  }
 });
 
 //Ruta para mostrar las profesiones
 router.get('/getProfesiones', async (req, res) => {
   try {
-      const pool = await getConnection();
-      const result = await pool.request()
-          .execute('spObtenerProfesiones');
+    const pool = await getConnection();
+    const result = await pool.request()
+      .execute('spObtenerProfesiones');
 
-      if (result.recordset.length > 0) {
-          res.json({
-              success: true,
-              profesiones: result.recordset
-          });
-      } else {
-          res.json({ success: false, message: 'No se encontraron profesiones' });
-      }
+    if (result.recordset.length > 0) {
+      res.json({
+        success: true,
+        profesiones: result.recordset
+      });
+    } else {
+      res.json({ success: false, message: 'No se encontraron profesiones' });
+    }
   } catch (error) {
-      console.error('ERROR: ' + JSON.stringify(error));
-      res.status(500).json({ success: false, message: 'Error de conexion' });
+    console.error('ERROR: ' + JSON.stringify(error));
+    res.status(500).json({ success: false, message: 'Error de conexion' });
   }
 });
 
@@ -496,90 +496,90 @@ const __dirname = path.dirname(__filename);
 // =================================================================================
 router.get('/rutograma/:id/preview-pdf', async (req, res) => {
   console.log(`Request GET received for /rutograma/${req.params.id}/preview-pdf`);
-    try {
-        const { id } = req.params;
-        const pool = await getConnection();
-        const result = await pool.request()
-            .input('id_rutograma', sql.Int, id)
-            .execute('[db_accessadmin].[spDatosPDFRutograma]');
+  try {
+    const { id } = req.params;
+    const pool = await getConnection();
+    const result = await pool.request()
+      .input('id_rutograma', sql.Int, id)
+      .execute('[db_accessadmin].[spDatosPDFRutograma]');
 
-        if (!result.recordsets || !result.recordsets[0] || result.recordsets[0].length === 0) {
-            return res.status(404).send({ success: false, message: 'Rutograma no encontrado' });
-        }
-
-        const datos = result.recordsets[0][0];
-        const tiposActividades = result.recordsets[1];
-        const tiposTransporteIda = result.recordsets[2];
-        const actividadesIda = result.recordsets[3];
-        const tiposTransporteRegreso = result.recordsets[4];
-        const actividadesRegreso = result.recordsets[5];
-        // Mapear los datos al formato que espera el componente de PDF
-        const rutogramaData = {
-            //datos
-            Nombres: datos.NombreCompleto.split(' ')[0] || '',
-            Apellidos: datos.NombreCompleto.split(' ').slice(1).join(' ') || '',
-            Cedula: datos.Cedula || '',
-            Cargo: datos.Cargo || '',
-            CentroTrabajo: datos.CentroTrabajo || '',
-            DireccionEmpresa: datos.DireccionEmpresa || '',
-            DireccionHabitacion: datos.DireccionEmpleado || '',
-            Horario: datos.HorarioTrabajo || '',
-            ContactoEmergencia: datos.ContactoEmergencia || '',
-            // Tipos de Actividades
-          tiposActividades: tiposActividades,
-            // Ida
-            VehiculoIda: tiposTransporteIda, 
-           HoraSalida: datos.HoraSalidaCasa
-            ? (() => {
-                const d = new Date(datos.HoraSalidaCasa);
-                const h = String(d.getUTCHours()).padStart(2, '0');
-                const m = String(d.getUTCMinutes()).padStart(2, '0');
-                return `${h}:${m}`;
-              })()
-            : '',
-            EsAmIda: datos.HoraSalidaCasa ? new Date(datos.HoraSalidaCasa).getHours() < 12 : true,
-            TiempoViajeIda: datos.TiempoViajeIda || '',
-            HaceEscalasIda: datos.HaceEscalasIda,
-            NumeroTransferenciasIda: datos.NumEscalasIda || 0,
-            DescripcionRutaIda: datos.DescripcionRutaIda || '',
-            RutaAlternaIda: datos.DescripcionRutaAlternaIda || '',
-            HaceActividadAntesIda: datos.HaceActividadAntesIda,
-            ActividadesIda: actividadesIda.map(act => ({
-                TipoActividad: act.id_tipo_actividad || 'No especificado',
-                otroTipoActividad: act.otro_tipo_actividad || '',
-                Descripcion: act.descripcion || '',
-                Ubicacion: act.ubicacion || '',
-                TiempoAproximado: act.tiempo_aproximado || '',
-                Frecuencia: act.frecuencia || '',
-                otroTipo: act.otro_tipo_actividad || ''
-            })),
-            // Regreso
-
-           VehiculoRegreso: tiposTransporteRegreso,
-            HoraRegreso: datos.HoraSalidaRegreso ? new Date(datos.HoraSalidaRegreso).getDate().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '',
-            EsAmRegreso: datos.HoraSalidaRegreso ? new Date(datos.HoraSalidaRegreso).getHours() < 12 : false,
-            TiempoViajeRegreso: datos.TiempoViajeRegreso || '',
-            TiempoViajeRegreso: datos.TiempoViajeRegreso || '',
-            HaceEscalasRegreso: datos.HaceEscalasRegreso,
-            NumeroTransferenciasRegreso: datos.NumEscalasRegreso || 0,
-            DescripcionRutaRegreso: datos.DescripcionRutaRegreso || '',
-            RutaAlternaRegreso: datos.RutaAlternaRegreso || '',
-            HaceActividadAntesRegreso: datos.HaceActividadAntesRegreso,
-            ActividadesRegreso: actividadesRegreso.map(act => ({
-                TipoActividad: act.id_tipo_actividad || 'No especificado',
-                Descripcion: act.descripcion || '',
-                Ubicacion: act.ubicacion || '',
-                TiempoAproximado: act.tiempo_aproximado || '',
-                Frecuencia: act.frecuencia || ''
-            }))
-        };
-        console.log(rutogramaData);
-        res.json({ success: true, data: rutogramaData });
-
-    } catch (error) {
-        console.error('Error al generar los datos para el PDF del rutograma:', error);
-        res.status(500).send({ success: false, message: 'Error interno del servidor al obtener los datos.', error: error.message });
+    if (!result.recordsets || !result.recordsets[0] || result.recordsets[0].length === 0) {
+      return res.status(404).send({ success: false, message: 'Rutograma no encontrado' });
     }
+
+    const datos = result.recordsets[0][0];
+    const tiposActividades = result.recordsets[1];
+    const tiposTransporteIda = result.recordsets[2];
+    const actividadesIda = result.recordsets[3];
+    const tiposTransporteRegreso = result.recordsets[4];
+    const actividadesRegreso = result.recordsets[5];
+    // Mapear los datos al formato que espera el componente de PDF
+    const rutogramaData = {
+      //datos
+      Nombres: datos.NombreCompleto.split(' ')[0] || '',
+      Apellidos: datos.NombreCompleto.split(' ').slice(1).join(' ') || '',
+      Cedula: datos.Cedula || '',
+      Cargo: datos.Cargo || '',
+      CentroTrabajo: datos.CentroTrabajo || '',
+      DireccionEmpresa: datos.DireccionEmpresa || '',
+      DireccionHabitacion: datos.DireccionEmpleado || '',
+      Horario: datos.HorarioTrabajo || '',
+      ContactoEmergencia: datos.ContactoEmergencia || '',
+      // Tipos de Actividades
+      tiposActividades: tiposActividades,
+      // Ida
+      VehiculoIda: tiposTransporteIda,
+      HoraSalida: datos.HoraSalidaCasa
+        ? (() => {
+          const d = new Date(datos.HoraSalidaCasa);
+          const h = String(d.getUTCHours()).padStart(2, '0');
+          const m = String(d.getUTCMinutes()).padStart(2, '0');
+          return `${h}:${m}`;
+        })()
+        : '',
+      EsAmIda: datos.HoraSalidaCasa ? new Date(datos.HoraSalidaCasa).getHours() < 12 : true,
+      TiempoViajeIda: datos.TiempoViajeIda || '',
+      HaceEscalasIda: datos.HaceEscalasIda,
+      NumeroTransferenciasIda: datos.NumEscalasIda || 0,
+      DescripcionRutaIda: datos.DescripcionRutaIda || '',
+      RutaAlternaIda: datos.DescripcionRutaAlternaIda || '',
+      HaceActividadAntesIda: datos.HaceActividadAntesIda,
+      ActividadesIda: actividadesIda.map(act => ({
+        TipoActividad: act.id_tipo_actividad || 'No especificado',
+        otroTipoActividad: act.otro_tipo_actividad || '',
+        Descripcion: act.descripcion || '',
+        Ubicacion: act.ubicacion || '',
+        TiempoAproximado: act.tiempo_aproximado || '',
+        Frecuencia: act.frecuencia || '',
+        otroTipo: act.otro_tipo_actividad || ''
+      })),
+      // Regreso
+
+      VehiculoRegreso: tiposTransporteRegreso,
+      HoraRegreso: datos.HoraSalidaRegreso ? new Date(datos.HoraSalidaRegreso).getDate().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '',
+      EsAmRegreso: datos.HoraSalidaRegreso ? new Date(datos.HoraSalidaRegreso).getHours() < 12 : false,
+      TiempoViajeRegreso: datos.TiempoViajeRegreso || '',
+      TiempoViajeRegreso: datos.TiempoViajeRegreso || '',
+      HaceEscalasRegreso: datos.HaceEscalasRegreso,
+      NumeroTransferenciasRegreso: datos.NumEscalasRegreso || 0,
+      DescripcionRutaRegreso: datos.DescripcionRutaRegreso || '',
+      RutaAlternaRegreso: datos.RutaAlternaRegreso || '',
+      HaceActividadAntesRegreso: datos.HaceActividadAntesRegreso,
+      ActividadesRegreso: actividadesRegreso.map(act => ({
+        TipoActividad: act.id_tipo_actividad || 'No especificado',
+        Descripcion: act.descripcion || '',
+        Ubicacion: act.ubicacion || '',
+        TiempoAproximado: act.tiempo_aproximado || '',
+        Frecuencia: act.frecuencia || ''
+      }))
+    };
+    console.log(rutogramaData);
+    res.json({ success: true, data: rutogramaData });
+
+  } catch (error) {
+    console.error('Error al generar los datos para el PDF del rutograma:', error);
+    res.status(500).send({ success: false, message: 'Error interno del servidor al obtener los datos.', error: error.message });
+  }
 });
 
 router.get('/rutogramaRRHH/SolicitudesRutograma', async (req, res) => {
