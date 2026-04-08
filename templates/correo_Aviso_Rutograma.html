@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <style>
+    .footer {
+      margin-top: 32px;
+      color: #888;
+      font-size: 0.95rem;
+      position: relative;
+      padding-bottom: 0;
+    }
+  </style>
+</head>
+
+<body>
+  <div style="font-family: Arial, sans-serif; background: #f4f6fb; padding: 0; margin: 0;">
+    <div
+      style="max-width: 600px; margin: 30px auto; background: #fff; border-radius: 10px; box-shadow: 0 2px 8px #00339122;">
+      <!-- Header -->
+      <div
+        style="background: linear-gradient(90deg, #003391 60%, #1A5FFA 100%); border-radius: 10px 10px 0 0; padding: 24px 0; text-align: center;">
+        <img src="cid:logoEmpresa" alt="Seguros Altamira" border="0" width="80">
+        <h2 style="color: #fff; margin: 8px 0 0 0;">¡Atención, ${nombre_completo}!</h2>
+      </div>
+
+      <!-- Cuerpo -->
+      <div style="border: 1px solid rgba(0,0,0,0.1);">
+        <div style="padding: 24px;">
+          <p style="color: #333; line-height: 1.6; font-size: 15px;">
+            Estimado(a) <strong>${nombre_completo}</strong>,
+          </p>
+          <p style="color: #333; line-height: 1.6; font-size: 15px;">
+            Te escribimos porque debes actualizar tu solicitud de Rutograma en la Intranet de Seguros Altamira.
+          </p>
+          <p style="color: #333; line-height: 1.6; font-size: 15px;">
+            El Rutograma es un requisito importante para tu seguridad. Por favor, completa y envía tu información a la
+            brevedad posible.
+          </p>
+        </div>
+
+        <div style="padding: 0 24px 24px 24px; text-align: center;">
+          <img src="cid:revisionRutograma" style="max-height: 300px; height: 100%; max-width: fit-content; width: 100%;"
+            alt="Rutograma">
+          <p style="color: #003391; font-size: 15px; margin-top: 16px; font-weight: bold;">
+            Por favor, ingresa a la Intranet y completa tu Rutograma.
+          </p>
+          <p style="color: #888; font-size: 0.85rem; margin-top: 8px;">
+            Si ya realizaste tu solicitud recientemente, ignora este mensaje o comunícate con Capital Humano.
+          </p>
+
+          <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
+            style="border-collapse: collapse;">
+            <tr>
+              <td align="center" style="padding: 20px 0 0 0;">
+                <a href="${BASE_URL}/expediente/rutograma" style="
+                      display: inline-block;
+                      background: #003f9e;
+                      color: #fff !important;
+                      text-decoration: none;
+                      font-weight: bold;
+                      font-size: 1rem;
+                      padding: 12px 32px;
+                      border-radius: 20px 5px 20px 5px;
+                      border: none;
+                      cursor: pointer;
+                      font-family: Arial, sans-serif;
+                    " target="_blank">Completar mi Rutograma</a>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding-top: 24px;" align="center">
+                <div class="footer">
+                  Este mensaje fue generado automáticamente por la Intranet de Seguros Altamira.<br>
+                  No responda a este correo.
+                </div>
+              </td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div style="background: #003391; color: #fff; border-radius: 0 0 10px 10px; text-align: center; padding: 12px;">
+        <small>Seguros Altamira, C.A. ${anio}</small>
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>
