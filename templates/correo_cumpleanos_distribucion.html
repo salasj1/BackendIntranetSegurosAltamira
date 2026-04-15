@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Feliz Cumpleanos</title>
+
+  <!--[if gte mso 9]>
+  <style>v\:* { behavior: url(#default#VML); } o\:* { behavior: url(#default#VML); }</style>
+  <xml>
+    <o:OfficeDocumentSettings>
+      <o:AllowPNG/>
+      <o:PixelsPerInch>96</o:PixelsPerInch>
+    </o:OfficeDocumentSettings>
+  </xml>
+  <![endif]-->
+
+  <!--
+    ══════════════════════════════════════════════════════════════════
+    DISEÑO: 600 × 338 px  (mismo ratio 16:9 que la imagen 1920×1080)
+    Con background-size:cover en un contenedor 600×338, la imagen
+    encaja EXACTAMENTE sin recortar ni dejar espacios en blanco.
+
+    VML BULLETPROOF BACKGROUND:
+    Outlook desktop ignora background-image CSS. Se usa VML (v:rect)
+    con condicionales <!--[if mso]--> para que Outlook renderice la
+    imagen de fondo con texto encima. Los demás clientes ignoran VML
+    y usan el CSS background-image como siempre.
+    ══════════════════════════════════════════════════════════════════
+
+    VARIABLES reemplazadas por enviarCumpleanos.js:
+      ${primerNombre}   → primer nombre  (Title Case)
+      ${primerApellido} → primer apellido (Title Case)
+      ${cargo}          → cargo del empleado
+      ${departamento}   → departamento / sucursal
+      ${fechaDia}       → "13/04"
+
+    PLACEHOLDERS de font-size — NO EDITAR, JS los reemplaza en runtime:
+      font-size:201px   → nombre   (JS inyecta 38–58 px según longitud)
+      font-size:202px   → apellido (JS inyecta 48–78 px según longitud)
+
+    IMAGEN CID:
+      cid:fondoCumpleanos → Imagen-cumpleanos.jpg (1920×1080)
+
+    FUENTES (especificadas por diseñador):
+      Script : 'Lavishly Yours', 'Alex Brush', 'Charm'
+      Sans   : 'Roboto Condensed', 'Noto Sans'
+  -->
+
+  <!-- Google Fonts — método 1: <link> (Gmail web, Outlook.com, Apple Mail) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Alex+Brush&family=Charm:wght@400;700&family=Lavishly+Yours&family=Noto+Sans:wght@300;400;700&family=Roboto+Condensed:wght@300;400;700;900&display=swap"
+    rel="stylesheet">
+
+  <style type="text/css">
+    /* Google Fonts — método 2: @import fallback para clientes que eliminan <link> */
+    @import url('https://fonts.googleapis.com/css2?family=Alex+Brush&family=Charm:wght@400;700&family=Lavishly+Yours&family=Noto+Sans:wght@300;400;700&family=Roboto+Condensed:wght@300;400;700;900&display=swap');
+
+    body,
+    #bodyTable {
+      margin: 0;
+      padding: 0;
+      width: 100% !important;
+    }
+
+    img {
+      border: none;
+      -ms-interpolation-mode: bicubic;
+      display: block;
+    }
+
+    table {
+      border-collapse: collapse !important;
+    }
+
+    /* ── Responsive: mobile ≤ 480px ── */
+    @media only screen and (max-width: 480px) {
+      .card-table {
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+      .card-td {
+        height: auto !important;
+        min-height: 280px !important;
+      }
+      .inner-table {
+        width: 100% !important;
+        height: auto !important;
+      }
+      .text-col {
+        width: 55% !important;
+        padding: 16px 8px 16px 14px !important;
+      }
+      .space-col {
+        width: 45% !important;
+        height: auto !important;
+      }
+      .feliz-text {
+        font-size: 26px !important;
+      }
+      .nombre-text {
+        font-size: 32px !important;
+      }
+      .apellido-text {
+        font-size: 38px !important;
+      }
+      .cargo-text {
+        font-size: 16px !important;
+      }
+      .depto-text {
+        font-size: 14px !important;
+      }
+      .fecha-text {
+        font-size: 28px !important;
+        margin-top: 20px !important;
+      }
+    }
+  </style>
+</head>
+
+<body style="margin:0;padding:0;">
+
+  <!-- Preheader invisible -->
+  <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;">
+    Feliz Cumpleanos - ${primerNombre} ${primerApellido}
+  </div>
+
+  <table id="bodyTable" width="100%" border="0" cellpadding="0" cellspacing="0" style="margin:0;padding:0;">
+    <tr>
+      <td align="left" valign="top">
+
+        <!--
+          Tarjeta fluid-hybrid: max 600 × 338 px
+          ─────────────────────────────────────────────────────────────
+          Desktop: se comporta como 600px fijo.
+          Mobile:  se adapta al 100% del ancho disponible.
+          Outlook: usa VML v:rect para mostrar la imagen de fondo.
+          ─────────────────────────────────────────────────────────────
+        -->
+        <table class="card-table" width="600" border="0" cellpadding="0" cellspacing="0"
+          style="width:100%;max-width:600px;">
+          <tr>
+            <td class="card-td" width="600" height="338" style="
+              width:100%;
+              max-width:600px;
+              height:338px;
+              padding:0;
+              font-size:0;
+              line-height:0;
+              background-color:#07101e;
+              background-image:url('cid:fondoCumpleanos');
+              background-repeat:no-repeat;
+              background-size:cover;
+              background-position:center center;
+              overflow:hidden;
+            ">
+
+              <!--[if gte mso 9]>
+              <v:rect xmlns:v="urn:schemas-microsoft-com:vml" fill="true" stroke="false"
+                      style="width:600px;height:338px;">
+                <v:fill type="frame" src="cid:fondoCumpleanos" color="#07101e" />
+                <v:textbox style="mso-fit-shape-to-text:false" inset="0,0,0,0">
+              <![endif]-->
+
+              <!-- Tabla interior: columna texto + columna vacía -->
+              <table class="inner-table" width="600" height="338" border="0" cellpadding="0" cellspacing="0"
+                style="width:100%;max-width:900px;height:500px;">
+                <tr>
+
+                  <!-- Columna texto (izquierda) — 280 px -->
+                  <td class="text-col" width="280" height="338" valign="middle" style="
+                    width:47%;
+                    height:338px;
+                    padding:20px 12px 20px 22px;
+                    vertical-align:middle;
+                    overflow:hidden;
+                  ">
+
+                    <!-- ¡Feliz Cumpleaños! — Lavishly Yours, 38px, script -->
+                    <p class="feliz-text" style="
+                      margin:0 0 2px 0;
+                      font-family:'Lavishly Yours','Alex Brush','Charm',Georgia,cursive;
+                      font-size:38px;
+                      font-weight:400;
+                      color:#ffffff;
+                      line-height:1.1;
+                      text-shadow:1px 1px 4px rgba(0,0,0,0.9);
+                    ">&#161; Feliz Cumplea&#241;os !</p>
+
+                    <!-- Nombre — 201px es PLACEHOLDER; JS lo reemplaza (38–58 px) -->
+                    <p class="nombre-text" style="
+                      margin:0;
+                      font-family:'Roboto Condensed','Noto Sans',Arial,Helvetica,sans-serif;
+                      font-size:201px;
+                      font-weight:900;
+                      color:#F47920;
+                      line-height:1.0;
+                      letter-spacing:-0.5px;
+                      word-break:break-word;
+                      text-shadow:1px 1px 5px rgba(0,0,0,0.9);
+                    ">${primerNombre}</p>
+
+                    <!-- Apellido — 202px es PLACEHOLDER; JS lo reemplaza (48–78 px) -->
+                    <p class="apellido-text" style="
+                      margin:0 0 8px 0;
+                      font-family:'Roboto Condensed','Noto Sans',Arial,Helvetica,sans-serif;
+                      font-size:202px;
+                      font-weight:900;
+                      color:#F47920;
+                      line-height:0.92;
+                      letter-spacing:-1px;
+                      word-break:break-word;
+                      text-shadow:1px 1px 5px rgba(0,0,0,0.9);
+                    ">${primerApellido}</p>
+
+                    <!-- Cargo — 22px, Roboto Condensed Light -->
+                    <p class="cargo-text" style="
+                      margin:0 0 1px 0;
+                      font-family:'Roboto Condensed','Noto Sans',Arial,Helvetica,sans-serif;
+                      font-size:22px;
+                      font-weight:300;
+                      color:#ffffff;
+                      line-height:1.3;
+                      word-wrap:break-word;
+                      text-shadow:1px 1px 3px rgba(0,0,0,0.95);
+                    ">${cargo}</p>
+
+                    <!-- Departamento — 20px, Roboto Condensed Light -->
+                    <p class="depto-text" style="
+                      margin:0 0 10px 0;
+                      font-family:'Roboto Condensed','Noto Sans',Arial,Helvetica,sans-serif;
+                      font-size:20px;
+                      font-weight:300;
+                      color:#ffffff;
+                      line-height:1.3;
+                      word-wrap:break-word;
+                      text-shadow:1px 1px 3px rgba(0,0,0,0.95);
+                    ">${departamento}</p>
+
+                    <!-- Fecha — 40px, Roboto Condensed Bold -->
+                    <p class="fecha-text" style="
+                      margin-top:50px;
+                      font-family:'Roboto Condensed','Noto Sans',Arial,Helvetica,sans-serif;
+                      font-size:40px;
+                      font-weight:800;
+                      color:#ffffff;
+                      line-height:1;
+                      text-shadow:1px 1px 3px rgba(0,0,0,0.95);
+                    ">${fechaDia}</p>
+
+                  </td>
+
+                  <!-- Columna derecha — muestra la imagen de fondo -->
+                  <td class="space-col" width="320" height="338" style="width:53%;height:338px;">&nbsp;</td>
+
+                </tr>
+              </table>
+
+              <!--[if gte mso 9]>
+                </v:textbox>
+              </v:rect>
+              <![endif]-->
+
+            </td>
+          </tr>
+        </table>
+
+      </td>
+    </tr>
+  </table>
+
+</body>
+
+</html>
