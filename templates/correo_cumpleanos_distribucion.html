@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Feliz Cumpleanos</title>
+
+  <!--
+    VARIABLES reemplazadas por enviarCumpleanos.js:
+      ${primerNombre}   → primer nombre  (Title Case)
+      ${primerApellido} → primer apellido (Title Case)
+      ${cargo}          → cargo del empleado
+      ${departamento}   → departamento / sucursal
+      ${fechaDia}       → "13/04"
+
+    PLACEHOLDERS de font-size — NO EDITAR, JS los reemplaza en runtime:
+      font-size:201px   → nombre   (JS inyecta 38–58 px según longitud)
+      font-size:202px   → apellido (JS inyecta 48–78 px según longitud)
+
+    IMAGEN CID:
+      cid:fondoCumpleanos → Imagen-cumpleanos.jpg (1920×1080)
+
+    FUENTES (especificadas por diseñador):
+      Script : 'Lavishly Yours', 'Alex Brush', 'Charm'
+      Sans   : 'Roboto Condensed', 'Noto Sans'
+
+    RESPONSIVE:
+      Desktop (> 480 px) : tarjeta 600×338 px, dos columnas (texto 280 + imagen 320).
+      Móvil   (≤ 480 px) : tarjeta 100% ancho, columna imagen colapsada, fuentes reducidas.
+      Las clases .tarjeta-outer / .tarjeta-td / .col-texto / .col-imagen / .*-texto
+      son controladas por las @media queries del bloque <style>.
+      El !important en @media sobreescribe los estilos inline en los clientes que
+      soportan media queries (Gmail web, Outlook.com, Apple Mail).
+      Clientes sin soporte (Outlook Desktop, Gmail App Android) muestran la versión desktop.
+  -->
+
+  <!-- Google Fonts — método 1: <link> (Gmail web, Outlook.com, Apple Mail) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Alex+Brush&family=Charm:wght@400;700&family=Lavishly+Yours&family=Noto+Sans:wght@300;400;700&family=Roboto+Condensed:wght@300;400;700;900&display=swap"
+    rel="stylesheet">
+
+  <style type="text/css">
+    /* Google Fonts — método 2: @import fallback para clientes que eliminan <link> */
+    @import url('https://fonts.googleapis.com/css2?family=Alex+Brush&family=Charm:wght@400;700&family=Lavishly+Yours&family=Noto+Sans:wght@300;400;700&family=Roboto+Condensed:wght@300;400;700;900&display=swap');
+
+    body,
+    #bodyTable {
+      margin: 0;
+      padding: 0;
+      width: 100% !important;
+    }
+
+    img {
+      border: none;
+      -ms-interpolation-mode: bicubic;
+      display: block;
+    }
+
+    table {
+      border-collapse: collapse !important;
+    }
+
+    /* ── Responsive: móvil ≤ 480 px ─────────────────────────────────────────── */
+    @media screen and (max-width: 480px) {
+
+      /* Tarjeta exterior: ancho completo */
+      .tarjeta-outer {
+        width: 100% !important;
+      }
+
+      /* Celda de fondo: ancho completo, alto automático (contenido define la altura) */
+      .tarjeta-td {
+        width: 100% !important;
+        height: auto !important;
+        min-height: 210px !important;
+      }
+
+      /* Tabla interior: ancho completo (anula el width:900px que se usa en desktop) */
+      .tarjeta-inner {
+        width: 100% !important;
+        height: auto !important;
+      }
+
+      /* Columna texto: ocupa todo el ancho de la tarjeta */
+      .col-texto {
+        width: 100% !important;
+        height: auto !important;
+        display: block !important;
+        padding: 14px 18px 18px 18px !important;
+      }
+
+      /* Columna imagen (vacía, solo para mostrar fondo): se oculta en móvil */
+      .col-imagen {
+        display: none !important;
+        width: 0 !important;
+        max-height: 0 !important;
+        overflow: hidden !important;
+        mso-hide: all !important;
+      }
+
+      /* Tipografía reducida para pantallas pequeñas */
+      /* !important sobreescribe los font-size inline inyectados por el JS      */
+      .feliz-texto {
+        font-size: 26px !important;
+      }
+
+      .nombre-texto {
+        font-size: 28px !important;
+      }
+
+      .apellido-texto {
+        font-size: 34px !important;
+      }
+
+      .cargo-texto {
+        font-size: 15px !important;
+      }
+
+      .depart-texto {
+        font-size: 10px !important;
+      }
+
+      .fecha-texto {
+        font-size: 26px !important;
+        margin-top: 14px !important;
+      }
+    }
+  </style>
+</head>
+
+<body style="margin:0;padding:0;">
+
+  <!-- Preheader invisible -->
+  <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;">
+    Feliz Cumpleanos - ${primerNombre} ${primerApellido}
+  </div>
+
+  <table id="bodyTable" width="100%" border="0" cellpadding="0" cellspacing="0" style="margin:0;padding:0;">
+    <tr>
+      <td align="center" valign="top">
+
+        <!--
+          Tarjeta: máximo 600 × 338 px (ratio 16:9).
+          En desktop se muestra con dos columnas: texto (280 px) + imagen de fondo (320 px).
+          En móvil (≤ 480 px): la tarjeta ocupa el 100% del ancho disponible,
+          la columna derecha se colapsa y la columna de texto toma todo el ancho.
+          La imagen de fondo (background-image) sigue visible en ambos casos.
+        -->
+        <table class="tarjeta-outer" width="600" border="0" cellpadding="0" cellspacing="0"
+          style="width:600px; max-width:600px;">
+          <tr>
+            <td class="tarjeta-td" width="600" height="338" style="
+              width:600px;
+              height:338px;
+              padding:0;
+              font-size:0;
+              line-height:0;
+              background-color:#07101e;
+              background-image:url('cid:fondoCumpleanos');
+              background-repeat:no-repeat;
+              background-size:cover;
+              background-position:center center;
+              overflow:hidden;
+            ">
+
+              <!-- Tabla interior: columna texto + columna vacía (muestra imagen de fondo) -->
+              <!-- width:900px / height:500px intencionales: fuerzan al td de fondo a calcular   -->
+              <!-- background-size:cover sobre un área mayor, mostrando la imagen completa.      -->
+              <table class="tarjeta-inner" width="600" height="338" border="0" cellpadding="0" cellspacing="0"
+                style="width:900px; height:500px;">
+                <tr>
+
+                  <!-- Columna texto (izquierda) — 280 px en desktop -->
+                  <td class="col-texto" width="280" height="338" valign="middle" style="
+                    width:280px;
+                    height:338px;
+                    padding:20px 20px 20px 22px;
+                    vertical-align:middle;
+                    overflow:hidden;
+                  ">
+
+                    <!-- ¡Feliz Cumpleaños! — Lavishly Yours, 38 px script -->
+                    <p class="feliz-texto" style="
+                      margin:0 0 2px 0;
+                      font-family:'Lavishly Yours','Alex Brush','Charm',Georgia,cursive;
+                      font-size:38px;
+                      font-weight:400;
+                      color:#ffffff;
+                      line-height:1.1;
+                      text-shadow:1px 1px 4px rgba(0,0,0,0.9);
+                    ">&#161; Feliz Cumplea&#241;os !</p>
+
+                    <!-- Nombre — 201px es PLACEHOLDER; JS lo reemplaza (38–58 px) -->
+                    <p class="nombre-texto" style="
+                      margin:0;
+                      font-family:'Roboto Condensed','Noto Sans',Arial,Helvetica,sans-serif;
+                      font-size:201px;
+                      font-weight:900;
+                      color:#F47920;
+                      line-height:1.0;
+                      letter-spacing:-0.5px;
+                      word-break:break-word;
+                      text-shadow:1px 1px 5px rgba(0,0,0,0.9);
+                    ">${primerNombre}</p>
+
+                    <!-- Apellido — 202px es PLACEHOLDER; JS lo reemplaza (48–78 px) -->
+                    <p class="apellido-texto" style="
+                      margin:0 0 8px 0;
+                      font-family:'Roboto Condensed','Noto Sans',Arial,Helvetica,sans-serif;
+                      font-size:202px;
+                      font-weight:900;
+                      color:#F47920;
+                      line-height:0.92;
+                      letter-spacing:-1px;
+                      word-break:break-word;
+                      text-shadow:1px 1px 5px rgba(0,0,0,0.9);
+                    ">${primerApellido}</p>
+
+                    <!-- Cargo — Roboto Condensed Light, 22 px -->
+                    <p class="cargo-texto" style="
+                      margin:0 0 1px 0;
+                      font-family:'Roboto Condensed','Noto Sans',Arial,Helvetica,sans-serif;
+                      font-size:22px;
+                      font-weight:300;
+                      color:#ffffff;
+                      line-height:1.3;
+                      word-wrap:break-word;
+                      text-shadow:1px 1px 3px rgba(0,0,0,0.95);
+                    ">${cargo}</p>
+
+                    <!-- Departamento — Roboto Condensed Light, 20 px -->
+                    <p class="depart-texto" style="
+                      margin:0 0 10px 0;
+                      font-family:'Roboto Condensed','Noto Sans',Arial,Helvetica,sans-serif;
+                      font-size:12px;
+                      font-weight:300;
+                      color:#ffffff;
+                      line-height:1.3;
+                      word-wrap:break-word;
+                      text-shadow:1px 1px 3px rgba(0,0,0,0.95);
+                    ">${departamento}</p>
+
+                    <!-- Fecha — Roboto Condensed Bold, 40 px -->
+                    <p class="fecha-texto" style="
+                      margin-top:50px;
+                      font-family:'Roboto Condensed','Noto Sans',Arial,Helvetica,sans-serif;
+                      font-size:40px;
+                      font-weight:800;
+                      color:#ffffff;
+                      line-height:1;
+                      text-shadow:1px 1px 3px rgba(0,0,0,0.95);
+                    ">${fechaDia}</p>
+
+                  </td>
+
+                  <!-- Columna derecha — muestra la imagen de fondo; se oculta en móvil -->
+                  <td class="col-imagen" width="1200" height="338" style="width:800px; height:338px;">&nbsp;</td>
+
+                </tr>
+              </table>
+
+            </td>
+          </tr>
+        </table>
+
+      </td>
+    </tr>
+  </table>
+
+</body>
+
+</html>

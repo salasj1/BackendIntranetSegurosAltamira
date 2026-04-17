@@ -1,65 +1,216 @@
+/**
+ * Job: enviarCumpleanos.js
+ *
+ * Cron que se ejecuta de Lunes a Viernes a las 7:20 AM (America/Caracas).
+ * Consulta la BD mediante SP_ObtenerCumpleanerosHoy y, por cada empleado
+ * que cumple años hoy, genera una tarjeta PNG con Puppeteer (en memoria,
+ * sin escribir en disco) y la envía por correo a la dirección de distribución.
+ *
+ * Variables de entorno:
+ *   CORREO_CUMPLEANOS_DESTINO — dirección destino (default: masivo@segurosaltamira.com)
+ *
+ * Imágenes requeridas en public/images/:
+ *   - Imagen-cumpleanos.jpg → fondo de la tarjeta (leído por generarTarjetaCumpleanos)
+ */
+
 import cron from 'node-cron';
-import fs from 'fs';
-import path from 'path';
-import dayjs from 'dayjs';
+import puppeteer from 'puppeteer';
+import sql from 'mssql';
 import { getConnection } from '../database/connection.js';
 import { sendMailWithRetry } from '../functions/transporter.js';
+import { generarTarjetaCumpleanos } from '../functions/generarTarjetaCumpleanos.js';
 
-// Consulta cumpleañeros del día
-const getCumpleanerosHoy = async () => {
-  const pool = await getConnection();
-  const hoy = dayjs().format('MM-DD');
-  console.log(hoy)
-  const result = await pool.request()
-    .query(`
-      SELECT 
-        CONCAT(
-          LEFT(V.nombres, CHARINDEX(' ', V.nombres + ' ') - 1),
-          ' ',
-          LEFT(V.apellidos, CHARINDEX(' ', V.apellidos + ' ') - 1)
-        ) AS nombre,
-        V.correo_e AS correo
-      FROM VSNEMPLE V
-      WHERE FORMAT(V.fecha_nac, 'MM-dd') = '${hoy}'
-    `);
+// ─────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────
+
+/**
+ * Formatea un string en Title Case (primera letra mayúscula, resto minúscula).
+ * @param {string} texto
+ * @returns {string}
+ */
+function titleCase(texto) {
+  if (!texto) return '';
+  return texto.charAt(0).toUpperCase() + texto.slice(1).toLowerCase();
+}
+
+// ─────────────────────────────────────────────
+// Acceso a BD
+// ─────────────────────────────────────────────
+
+/**
+ * Llama al SP_ObtenerCumpleanerosHoy y retorna los registros.
+ * @param {import('mssql').ConnectionPool} pool
+ */
+async function obtenerCumpleanerosHoy(pool) {
+  const result = await pool
+    .request()
+    .input('FechaPrueba', sql.Date, '2026-04-10')   // ← tipo DATE explícito para el SP
+    .execute('SP_ObtenerCumpleanerosHoy');
   return result.recordset;
-};
+}
 
-const imagenes = [
-  '<img src="https://i.ibb.co/nsVvkMkb/Happy-birthday-bro.png" alt="Happy-birthday-bro" style="display:inline-block;border:none;height:auto;max-width:250px;" width="250"/>',
-  '<img src="https://i.ibb.co/tpd7kmHh/Happy-birthday-cuate.png" alt="Happy-birthday-cuate" style="display:inline-block;border:none;height:auto;max-width:250px;" width="250"/>',
-  '<img src="https://i.ibb.co/fGHptQn1/Happy-birthday-amico.png" alt="Happy-birthday-amico" style="display:inline-block;border:none;height:auto;max-width:250px;" width="250"/>',
-  '<img src="https://i.ibb.co/XZHcBjkn/Happy-birthday-rafiki.png" alt="Happy-birthday-rafiki" style="display:inline-block;border:none;height:auto;max-width:250px;" width="250"/>',
-  '<img src="https://i.ibb.co/0dvNsvK/Blowing-out-Birthday-candles-bro.png" alt="Birthday Cake" style="display:inline-block;border:none;height:auto;max-width:250px;" width="250"/>',
-  '<img src="https://i.ibb.co/pvtYbS63/cumpleanos.png" alt="cumpleanos" border="0" style="display:inline-block;border:none;height:auto;max-width:250px;" width="250">'
-];
-// Envía el correo usando la plantilla
-const enviarCorreoCumpleanos = async (nombre, correo) => {
-  const templatePath = path.join(process.cwd(), 'templates', 'correo_cumpleanos.html');
-  let html = fs.readFileSync(templatePath, 'utf8');
-  html = html.replace('${nombre}', nombre);
-  const imagenAleatoria = imagenes[Math.floor(Math.random() * imagenes.length)];
-  html = html.replace('${Imagen}', imagenAleatoria);
+// ─────────────────────────────────────────────
+// HTML wrapper del correo
+// ─────────────────────────────────────────────
 
-  console.log(`Enviando correo de cumpleaños a: ${nombre} <${correo}>`);
-  const mailOptions = {
-    from: `"Seguros Altamira" <intranet@segurosaltamira.com.ve>`,
-    to: 'alejandro.salas@segurosaltamira.com'/* correo */,
-    subject: '¡Feliz Cumpleaños!',
-    html
-  };
-  await sendMailWithRetry(mailOptions);
-};
+/**
+ * Construye el HTML mínimo del correo que contiene la tarjeta como imagen CID.
+ * max-width:100% hace la imagen responsive automáticamente en móvil.
+ * @param {string} primerNombre
+ * @param {string} primerApellido
+ * @returns {string}
+ */
+function buildEmailHtml(primerNombre, primerApellido) {
+  return `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;background:#f4f4f4;">
+  <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin:0;padding:0;">
+    <tr>
+      <td align="center" style="padding:20px 0;">
+        <img src="cid:tarjetaCumpleanos"
+             width="800"
+             alt="\u00a1Feliz Cumplea\u00f1os ${primerNombre} ${primerApellido}!"
+             style="display:block;max-width:100%;height:auto;border:0;">
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
 
+// ─────────────────────────────────────────────
+// Lógica principal de envío
+// ─────────────────────────────────────────────
 
-cron.schedule('15 8 * * *', async () => {
+export async function ejecutarEnvioCumpleanos() {
+
+  let pool;
   try {
-    const cumpleaneros = await getCumpleanerosHoy();
-    for (const persona of cumpleaneros) {
-      await enviarCorreoCumpleanos(persona.nombre, persona.correo);
-    }
-    console.log(`Correos de cumpleaños enviados: ${cumpleaneros.length}`);
-  } catch (error) {
-    console.error('Error enviando correos de cumpleaños:', error);
+    pool = await getConnection();
+  } catch (err) {
+    console.error('[enviarCumpleanos] Error de conexión a BD:', err.message);
+    return;
   }
-});
+
+  let cumpleaneros;
+  try {
+    cumpleaneros = await obtenerCumpleanerosHoy(pool);
+  } catch (err) {
+    console.error('[enviarCumpleanos] Error al consultar cumpleañeros:', err.message);
+    return;
+  }
+
+  if (cumpleaneros.length === 0) {
+    console.log('[enviarCumpleanos] No hay cumpleañeros hoy.');
+    return;
+  }
+
+  console.log(`[enviarCumpleanos] Cumpleañeros hoy: ${cumpleaneros.length}`);
+
+  const destino = 'masivo@segurosaltamira.com';
+
+
+
+  let enviados = 0;
+  let fallidos = 0;
+
+  // El browser se lanza UNA SOLA VEZ para todos los empleados del día
+  let browser;
+  try {
+    browser = await puppeteer.launch({
+      headless: true,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--allow-file-access-from-files', // Permite que páginas file:// carguen la imagen de fondo
+      ],
+    });
+
+    for (const emp of cumpleaneros) {
+      const primerNombre = titleCase((emp.primer_nombre || '').trim());
+      const primerApellido = titleCase((emp.primer_apellido || '').trim());
+
+      // Para empleados de Caracas (co_ubicacion = '103') el des_depart indica la VP/Gerencia.
+      // Para sucursales el des_depart dice "SUCURSAL XXXX".
+      const cargo = titleCase((emp.des_cargo || '').trim());
+      const departamento = titleCase((emp.des_depart || '').trim());
+      const fechaSolo = emp.fecha_nac.toISOString().split('T')[0]; // "YYYY-MM-DD"
+      const [, mesRaw, diaRaw] = fechaSolo.split('-');
+      const dia = String(parseInt(diaRaw, 10));
+      const mes = mesRaw.padStart(2, '0');
+      console.log(dia, mes);
+      const fechaDia = `${dia}/${mes}`;
+
+      // Generar tarjeta PNG en memoria (no se escribe en disco)
+      let pngBuffer;
+      try {
+        pngBuffer = await generarTarjetaCumpleanos(browser, {
+          primerNombre,
+          primerApellido,
+          cargo,
+          departamento,
+          fechaDia,
+        });
+      } catch (err) {
+        console.error(`[enviarCumpleanos] [IMG-FAIL] ${primerNombre} ${primerApellido}:`, err.message);
+        fallidos++;
+        continue;
+      }
+
+      const mailOptions = {
+        from: '"Intranet Seguros Altamira" <IntranetSegurosAltamira@segurosaltamira.com>',
+        to: destino,
+        subject: `¡Celebremos las ocasiones especiales!`,
+        html: buildEmailHtml(primerNombre, primerApellido),
+        attachments: [
+          {
+            filename: `tarjeta-cumpleanos-${primerNombre}-${primerApellido}.png`,
+            content: pngBuffer,
+            cid: 'tarjetaCumpleanos',
+            contentType: 'image/png',
+            contentDisposition: 'inline',
+          },
+        ],
+      };
+
+      const resultado = await sendMailWithRetry(mailOptions);
+
+      if (resultado.success) {
+        console.log(`[enviarCumpleanos] [OK]   ${primerNombre} ${primerApellido} (${emp.correo_e})`);
+        enviados++;
+      } else {
+        console.error(`[enviarCumpleanos] [FAIL] ${primerNombre} ${primerApellido}:`, resultado.error?.message);
+        fallidos++;
+      }
+    }
+
+  } finally {
+    // Cerrar el browser siempre, incluso si hubo errores
+    if (browser) await browser.close();
+  }
+
+  console.log(`[enviarCumpleanos] Resumen: ${enviados} enviados, ${fallidos} fallidos de ${cumpleaneros.length} total.`);
+}
+
+// ─────────────────────────────────────────────
+// Exportable: registrar el cron al iniciar el servidor
+// ─────────────────────────────────────────────
+
+/**
+ * Registra el cron job de cumpleaños.
+ * Llamar una sola vez desde index.js al arrancar el servidor.
+ */
+export function enviarCumpleanos() {
+  console.log('[enviarCumpleanos] Programando cron diario a las 8:15 AM (America/Caracas)...');
+
+  // Minuto 20, hora 7, cualquier día, mes y día de semana (Lunes a Viernes)
+  // 7:20 AM para no colisionar con otros jobs que se disparan a las 8:00 AM exactas.
+  cron.schedule('20 7 * * 1-5', ejecutarEnvioCumpleanos, {
+    timezone: 'America/Caracas',
+  });
+}

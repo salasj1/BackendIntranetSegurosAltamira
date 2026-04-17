@@ -3,3 +3,8 @@ node_modules
 JSON/GoogleDriveKey.json
 JSON/GoogleServiceKey.json
 token.json
+.claude/agent-memory/senior-backend-nodejs/MEMORY.md
+CLAUDE.md
+.claude/agent-memory/senior-backend-nodejs/project_email_jobs.md
+.claude/agents/senior-backend-nodejs.md
+database/sp_cumpleanos.sql

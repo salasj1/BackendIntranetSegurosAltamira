@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <!--
+    Plantilla para generación de imagen con Puppeteer.
+    NO es una plantilla de correo — no contiene hacks de email (mso-*, tablas anidadas, etc.).
+
+    PLACEHOLDERS reemplazados por generarTarjetaCumpleanos.js:
+      {{IMAGEN_BASE64}}    → data URL base64 de Imagen-cumpleanos.jpg
+      {{primerNombre}}     → nombre en Title Case
+      {{primerApellido}}   → apellido en Title Case
+      {{cargo}}            → cargo del empleado
+      {{departamento_html}} → bloque <p class="departamento">...</p> completo, o "" si vacío
+      {{fechaDia}}         → "DD/MM"
+      font-size:201px      → JS reemplaza con tamaño calculado del nombre  (38–58 px)
+      font-size:202px      → JS reemplaza con tamaño calculado del apellido (48–78 px)
+
+    VIEWPORT: 600×338 px con deviceScaleFactor:2 → PNG resultante: 1200×676 px físicos.
+    El cliente de correo lo muestra a 600 px (max-width:100% lo hace responsive en móvil).
+  -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Rouge+Script&family=Roboto+Condensed:wght@300;700;900&family=Noto+Sans:wght@300;400&display=swap"
+    rel="stylesheet">
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 800px;
+      height: 450px;
+      overflow: hidden;
+      background: #07101e;
+    }
+
+    /* Tarjeta: imagen de fondo cargada desde {{IMAGEN_URL}} (file:// inyectado por JS) */
+    .tarjeta {
+      position: relative;
+      width: 800px;
+      height: 450px;
+      background-image: url('{{IMAGEN_URL}}');
+      background-size: cover;
+      background-position: center center;
+      background-repeat: no-repeat;
+      overflow: hidden;
+    }
+
+    /* Columna izquierda: texto superpuesto sobre el área oscura de la imagen */
+    .col-texto {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 350px;
+      height: 450px;
+      padding: 20px 12px 20px 22px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      margin-top: 67.5px;
+      margin-bottom: 15px;
+      margin-left: 12.5px;
+    }
+
+    /* ¡ Feliz Cumpleaños ! */
+    .excl-inv {
+      display: inline-block;
+      transform: rotate(180deg);
+    }
+
+    .feliz {
+      font-family: 'Rouge Script', Georgia, cursive;
+      font-style: italic;
+      font-size: 45px;
+      font-weight: 400;
+      color: #ffffff;
+      line-height: 1.1;
+      text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.9);
+      margin-bottom: 2px;
+      margin-left: 5px;
+    }
+
+    /* Primer nombre — font-size:201px es PLACEHOLDER, JS lo reemplaza */
+    .nombre {
+      font-family: 'Roboto Condensed', 'Noto Sans', Arial, sans-serif;
+      font-size: 21px;
+      font-weight: 900;
+      color: #F47920;
+      line-height: 1.0;
+      letter-spacing: -0.5px;
+      word-break: break-word;
+      text-shadow: 1px 1px 5px rgba(0, 0, 0, 0.9);
+    }
+
+    /* Primer apellido — font-size:202px es PLACEHOLDER, JS lo reemplaza */
+    .apellido {
+      font-family: 'Roboto Condensed', 'Noto Sans', Arial, sans-serif;
+      font-size: 22px;
+      font-weight: 900;
+      color: #F47920;
+      line-height: 0.92;
+      letter-spacing: -1px;
+      word-break: break-word;
+      text-shadow: 1px 1px 5px rgba(0, 0, 0, 0.9);
+      margin-bottom: 6px;
+    }
+
+    /* Cargo */
+    .cargo {
+      font-family: 'Roboto Condensed', 'Noto Sans', Arial, sans-serif;
+      font-size: 17.5px;
+      font-weight: 300;
+      color: #ffffff;
+      line-height: 1.3;
+      word-wrap: break-word;
+      text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.95);
+      margin-bottom: 1px;
+    }
+
+    /* Departamento / Sucursal (opcional — el bloque completo se inyecta o se omite desde JS) */
+    .departamento {
+      font-family: 'Roboto Condensed', 'Noto Sans', Arial, sans-serif;
+      font-size: 17.5px;
+      font-weight: 300;
+      color: rgb(255, 255, 255);
+      line-height: 1.3;
+      word-wrap: break-word;
+      text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.95);
+    }
+
+    /* Fecha — empujada al fondo de la columna con margin-top:auto (flex) */
+    .fecha {
+      font-family: 'Roboto Condensed', 'Noto Sans', Arial, sans-serif;
+      font-size: 40px;
+      font-weight: 700;
+      color: #ffffffb9;
+      line-height: 1;
+      text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.95);
+      margin-left: 2px;
+      margin-top: auto;
+    }
+
+    .fecha2 {
+      position: absolute;
+      bottom: 40px;
+      left: 40px;
+      font-family: 'Roboto Condensed', 'Noto Sans', Arial, sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: #ffffffb9;
+      line-height: 1;
+      text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.95);
+      margin-left: 2px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="tarjeta">
+    <div class="col-texto">
+      <p class="feliz"><span class="excl-inv">!</span> Feliz Cumplea&#241;os !</p>
+      <p class="nombre">{{primerNombre}}</p>
+      <p class="apellido">{{primerApellido}}</p>
+      <p class="cargo">{{cargo}}</p>
+      {{departamento_html}}
+      <p class="fecha"></p>
+    </div>
+    <p class="fecha2">{{fechaDia}}</p>
+  </div>
+</body>
+
+</html>
