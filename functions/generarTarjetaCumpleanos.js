@@ -49,9 +49,8 @@ function cargarPlantilla() {
 function fontSizeNombre(texto) {
   const len = (texto || '').length;
   if (len <= 3) return '52px';
-  if (len <= 5) return '46px';
-  if (len <= 7) return '42px';
-  if (len <= 9) return '38px';
+  if (len <= 5) return '51px';
+  if (len <= 9) return '50px';
   return '34px';
 }
 
@@ -81,6 +80,23 @@ function escapeHtml(str) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+/**
+ * Formatea el cargo para la plantilla.
+ * Si tiene 34 o más caracteres, inserta un <br> en el último espacio
+ * antes de la posición 34 para evitar que el texto choque con la imagen.
+ * @param {string} cargo
+ * @returns {string}
+ */
+function formatCargo(cargo) {
+  if ((cargo || '').length >= 34) {
+    const breakAt = cargo.lastIndexOf(' ', 33);
+    if (breakAt > 0) {
+      return escapeHtml(cargo.substring(0, breakAt)) + '<br>' + escapeHtml(cargo.substring(breakAt + 1));
+    }
+  }
+  return escapeHtml(cargo);
 }
 
 // ── Función principal ─────────────────────────────────────────────────────────
@@ -114,7 +130,7 @@ export async function generarTarjetaCumpleanos(browser, datos) {
     .replace(/{{IMAGEN_URL}}/g, CAKE_FILE_URL)
     .replace(/{{primerNombre}}/g, escapeHtml(datos.primerNombre))
     .replace(/{{primerApellido}}/g, escapeHtml(datos.primerApellido))
-    .replace(/{{cargo}}/g, escapeHtml(datos.cargo))
+    .replace(/{{cargo}}/g, formatCargo(datos.cargo))
     .replace(/{{departamento_html}}/g, departamentoHtml)
     .replace(/{{fechaDia}}/g, escapeHtml(datos.fechaDia))
     .replace(/font-size:\s*21px/g, `font-size:${fontSizeNombre(datos.primerNombre)}`)

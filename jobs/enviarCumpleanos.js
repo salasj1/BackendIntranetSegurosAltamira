@@ -45,7 +45,6 @@ function titleCase(texto) {
 async function obtenerCumpleanerosHoy(pool) {
   const result = await pool
     .request()
-    .input('FechaPrueba', sql.Date, '2026-04-10')   // ← tipo DATE explícito para el SP
     .execute('SP_ObtenerCumpleanerosHoy');
   return result.recordset;
 }
