@@ -29,16 +29,48 @@ router.get('/vacaciones/id/:cod_emp', async (req, res) => {
   }
 });
 
-// Se obtienen las vacaciones aprobadas
+// Se obtienen las vacaciones aprobadas con paginacion y filtros
 router.get('/vacacionesaprobadas', async (req, res) => {
-
-  console.log('Request GET received for /vacacionesaprobadas');
+  const {
+    page = 1, pageSize = 15,
+    fechaInicioDesde, fechaInicioHasta,
+    fechaRetornoDesde, fechaRetornoHasta,
+    searchID, searchCI, searchNombre,
+    searchEstado, searchDiasDisfrutar, searchDiasPagar
+  } = req.query;
 
   try {
     const pool = await getConnection();
-    const result = await pool.request()
-      .execute(`spMostrarVacacionesRRHH`);
-    res.json(result.recordset);
+    const request = pool.request()
+      .input('PageNumber',          sql.Int,           parseInt(page))
+      .input('PageSize',            sql.Int,           parseInt(pageSize))
+      .input('FechaInicioDesde',    sql.Date,          fechaInicioDesde    || null)
+      .input('FechaInicioHasta',    sql.Date,          fechaInicioHasta    || null)
+      .input('FechaRetornoDesde',   sql.Date,          fechaRetornoDesde   || null)
+      .input('FechaRetornoHasta',   sql.Date,          fechaRetornoHasta   || null)
+      .input('SearchID',            sql.NVarChar(20),  searchID            || null)
+      .input('SearchCI',            sql.NVarChar(20),  searchCI            || null)
+      .input('SearchNombre',        sql.NVarChar(100), searchNombre        || null)
+      .input('SearchEstado',        sql.NVarChar(50),  searchEstado        || null)
+      .input('SearchDiasDisfrutar', sql.NVarChar(10),  searchDiasDisfrutar || null)
+      .input('SearchDiasPagar',     sql.NVarChar(10),  searchDiasPagar     || null);
+
+    const result = await request.execute('spMostrarVacacionesRRHHPaginado');
+    const rows = result.recordset || [];
+    // El SP devuelve un único recordset con TotalCount como columna en cada fila
+    // (window function COUNT(*) OVER()). Si el set está vacío, totalCount = 0.
+    const totalCount = rows.length > 0 ? (rows[0].TotalCount ?? 0) : 0;
+    // Limpiamos TotalCount de cada fila antes de enviar al cliente
+    const data = rows.map(({ TotalCount, ...rest }) => rest);
+    const pageSizeNum = parseInt(pageSize);
+
+    res.json({
+      data,
+      totalCount,
+      currentPage: parseInt(page),
+      pageSize:    pageSizeNum,
+      totalPages:  Math.ceil(totalCount / pageSizeNum)
+    });
   } catch (error) {
     console.error('Error fetching vacaciones:', error);
     res.status(500).json({ error: 'Error fetching vacaciones' });

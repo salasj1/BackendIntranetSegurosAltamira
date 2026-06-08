@@ -14,21 +14,64 @@ function analizarArchivo(nombreArchivo, cedulaCarpeta) {
     "ConstanciaResidencia",
     "SolicitudCedula",
     "SolicitudEmpleo",
-    "Rutograma"
+    "Rutograma",
+    "ARI"
   ];
   const palabras = palabrasClave.join('|');
+
+  const nombreTrimmed = nombreArchivo.trim();
+
+  // Detectar extensión duplicada (.pdf.pdf) antes de normalizar
+  if (/(\.pdf){2,}$/i.test(nombreTrimmed)) {
+    return `El archivo tiene la extensión .pdf duplicada. Debe renombrarse correctamente.`;
+  }
+
+  // Detectar extensión inválida (no .pdf)
+  const extensionOriginal = nombreTrimmed.match(/(\.[^.]+)$/)?.[1] || '';
+  if (extensionOriginal && !/^\.pdf$/i.test(extensionOriginal)) {
+    return `La extensión "${extensionOriginal}" no es válida, el archivo debe ser .pdf`;
+  }
+
+  let nombreNormalizado = nombreTrimmed;
+
+  // Validar que el tipo de documento sea una palabra clave reconocida
+  const partes = nombreNormalizado.replace(/\.pdf$/i, '').split('_');
+  if (partes.length >= 2) {
+    const tipoPosible = partes[1];
+    // Detectar si el tipo contiene una fecha pegada con guion (ej: DocumentosOtros-28-04-2026)
+    const palabraClave = palabrasClave.find(p => tipoPosible.toLowerCase().startsWith(p.toLowerCase()));
+    if (palabraClave && tipoPosible.length > palabraClave.length) {
+      return `El archivo usa "-" en lugar de "_" como separador . El formato correcto es: <Cédula>_<Título>_<Fecha>.pdf`;
+    }
+    if (!palabrasClave.some(p => p.toLowerCase() === tipoPosible.toLowerCase())) {
+      return `El tipo de documento "${tipoPosible}" no es reconocido. Los tipos válidos son: ${palabrasClave.join(', ')}.`;
+    }
+  }
+
+  // Regex para DocumentosOtros: sin fecha de vencimiento
+  const regexSinVencimiento = new RegExp(
+    `^([\\d-]+)_(DocumentosOtros)_(\\d{2}-\\d{2}-\\d{4})(\\.pdf)?$`,
+    'i'
+  );
+  // Regex para el resto: con fecha de vencimiento opcional
   const regex = new RegExp(
     `^([\\d-]+)_(${palabras})_(\\d{2}-\\d{2}-\\d{4})(_(\\d{2}-\\d{2}-\\d{4}))?(\\.pdf)?$`,
     'i'
   );
-  const match = nombreArchivo.match(regex);
+
+  const esSinVencimiento = /^DocumentosOtros$/i.test(nombreNormalizado.split('_')[1] || '');
+  const match = esSinVencimiento
+    ? nombreNormalizado.match(regexSinVencimiento)
+    : nombreNormalizado.match(regex);
+
   if (!match) {
-    return "Nombre no cumple el patrón requerido: <Cédula>_<Título>_<FechaIngreso>[_<FechaVencimiento>].pdf";
+    return esSinVencimiento
+      ? "Nombre no cumple el patrón requerido: <Cédula>_DocumentosOtros_<FechaIngreso>.pdf"
+      : "Nombre no cumple el patrón requerido: <Cédula>_<Título>_<FechaIngreso>[_<FechaVencimiento>].pdf";
   }
   const cedula = match[1];
-  const titulo = match[2];
   const fechaIngreso = match[3];
-  const fechaVencimiento = match[5];
+  const fechaVencimiento = esSinVencimiento ? undefined : match[5];
   if (!/^\d{1,2}-?\d{6,8}$|^\d{6,9}$/.test(cedula)) {
     return "Cédula no tiene el formato correcto (solo números o números con guion).";
   }
@@ -72,19 +115,19 @@ async function main() {
     console.log('Archivos en la carpeta:', files);
    */
   // Ejemplo: buscar un archivo por nombre
-  /* const file = await findFileByNameInSubfolder(auth, '19330859', '19330859_Cedula_24-04-2025_28-10-2025.pdf');
+  /* const file = await findFileByNameInSubfolder(auth, '19330859', '19330859_Cedula_24-04-2025_28-10-2025.');
   console.log('Archivo encontrado:', file); */
-  
-   /*  const archivo = await BuscarDocumento(auth, '5787215', 'Cedula');
-    console.log('Archivo encontrado:', archivo); */
-  
+
+  /*  const archivo = await BuscarDocumento(auth, '5787215', 'Cedula');
+   console.log('Archivo encontrado:', archivo); */
+
   /*   const file2 = await findFileByName(auth, '19330859_Cedula_24-04-2025_28-10-2025.pdf');
     console.log('Archivo encontrado por nombre:', file2); */
-  
+
   // Prueba: listar archivos de una carpeta y analizarlos
-  const parentFolderId = process.env.VITE_GOOGLE_DRIVE_FOLDER_ID ; // Expedientes
+  const parentFolderId = process.env.VITE_GOOGLE_DRIVE_FOLDER_ID; // Expedientes
   const drive = google.drive({ version: 'v3', auth });
-  
+
   // Listar subcarpetas (empleados)
   const subfoldersRes = await drive.files.list({
     q: `'${parentFolderId}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,

@@ -6,7 +6,7 @@ import reciboDePagoRoutes from './routes/recibodepago.routes.js';
 import signupRouter from './routes/signup.routes.js';
 import prestacionesRouter from './routes/prestaciones.routes.js';
 import arc from './routes/arc.routes.js';
-import vacacionesRouter from './routes/vacaciones.routes.js'; 
+import vacacionesRouter from './routes/vacaciones.routes.js';
 import permisosRouter from './routes/permisos.routes.js';
 import changepassword from './routes/changepassword.routes.js';
 import constancideTrabajoRouter from './routes/constanciaDeTrabajo.routes.js';
@@ -15,9 +15,10 @@ import notificacionRouter from './routes/notificaciones.routes.js';
 import expedienteRouter from './routes/expediente.routes.js';
 import estadisticasRouter from './routes/stadistic.routes.js';
 import adminRouter from './routes/admin.routes.js';
+import galeriaRouter from './routes/galeria.routes.js';
 const app = express();
-app.use(express.json()); 
-app.use(express.urlencoded({ extended: true })); 
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(cors({
     origin: '*', // Permitir cualquier origen
     credentials: true
@@ -38,5 +39,6 @@ app.use(vacacionesRouter);
 app.use(permisosRouter);
 app.use('/admin', adminRouter); // Rutas de administración
 app.use('/estadisticas', estadisticasRouter);
+app.use('/galeria', galeriaRouter);
 
 export default app;

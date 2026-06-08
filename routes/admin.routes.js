@@ -1,6 +1,7 @@
 import express from 'express';
 import { getConnection } from '../database/connection.js';
 import jwt from 'jsonwebtoken';
+import { ejecutarEnvioCumpleanos } from '../jobs/enviarCumpleanos.js';
 
 const router = express.Router();
 
@@ -38,7 +39,8 @@ router.post('/impersonate', async (req, res) => {
         const pool = await getConnection();
         const result = await pool.request()
             .input('username', username)
-            .query(`SELECT u.*, e.nombre_completo nombre_completo,e.nombres nombres,e.apellidos apellidos, e.des_cargo, e.fecha_ing, e.des_depart, e.tipo, e.RRHH, e.correo_e email,e.sexo FROM snusuarios u
+            .query(`SELECT u.*, e.nombre_completo nombre_completo,e.nombres nombres,e.apellidos apellidos, e.des_cargo, e.fecha_ing, e.fecha_nac, e.des_depart, e.tipo, e.RRHH, e.correo_e email, e.sexo sexo
+                FROM snusuarios u
                 JOIN VSNEMPLE e ON u.cod_emp COLLATE Modern_Spanish_CI_AS = e.cod_emp COLLATE Modern_Spanish_CI_AS
                 WHERE u.username = @username COLLATE Modern_Spanish_CI_AS`);
 
@@ -61,9 +63,9 @@ router.post('/impersonate', async (req, res) => {
             process.env.JWT_SECRET,
             { expiresIn: '1h' }
         );
-        console.log("nombres usuario impersonado:",user.nombres );
+        console.log("nombres usuario impersonado:", user.nombres);
 
-      
+
         res.json({
             success: true,
             message: 'Authenticated successfully',
@@ -74,6 +76,7 @@ router.post('/impersonate', async (req, res) => {
             nombre_completo: user.nombre_completo,
             des_cargo: user.des_cargo,
             fecha_ing: user.fecha_ing,
+            fecha_nac: user.fecha_nac,
             des_depart: user.des_depart,
             tipo: user.tipo,
             RRHH: user.RRHH,
@@ -84,6 +87,16 @@ router.post('/impersonate', async (req, res) => {
     } catch (error) {
         console.error('Error al impersonar usuario:', error);
         res.status(500).json({ success: false, message: 'Error al impersonar usuario' });
+    }
+});
+
+router.post('/cumpleanos/enviar', async (req, res) => {
+    try {
+        await ejecutarEnvioCumpleanos();
+        res.json({ success: true, message: 'Envío de correos de cumpleaños ejecutado' });
+    } catch (error) {
+        console.error('Error al ejecutar envío de cumpleaños:', error);
+        res.status(500).json({ success: false, message: 'Error al ejecutar el envío de cumpleaños' });
     }
 });
 

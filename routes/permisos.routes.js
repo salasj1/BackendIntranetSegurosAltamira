@@ -303,6 +303,45 @@ router.put('/permisos/:PermisosID/reject2', async (req, res) => {
   }
 });
 
+// Ruta paginada con filtros para RRHH
+router.get('/permisos/aprobadosProcesadosPaginado', async (req, res) => {
+  const {
+    page = 1, pageSize = 15,
+    searchID, searchCI, searchNombre, searchTitulo, searchEstado, searchDescontable,
+    fechaInicioDesde, fechaInicioHasta, fechaFinDesde, fechaFinHasta,
+  } = req.query;
+  try {
+    const pool = await getConnection();
+    const descontableVal = searchDescontable === '1' ? 1 : searchDescontable === '0' ? 0 : null;
+    const result = await pool.request()
+      .input('PageNumber',        sql.Int,          parseInt(page))
+      .input('PageSize',          sql.Int,          parseInt(pageSize))
+      .input('searchID',          sql.VarChar(20),  searchID          || null)
+      .input('searchCI',          sql.VarChar(20),  searchCI          || null)
+      .input('searchNombre',      sql.VarChar(100), searchNombre      || null)
+      .input('searchTitulo',      sql.VarChar(100), searchTitulo      || null)
+      .input('searchEstado',      sql.VarChar(50),  searchEstado      || null)
+      .input('searchDescontable', sql.Bit,          descontableVal)
+      .input('fechaInicioDesde',  sql.Date,         fechaInicioDesde  || null)
+      .input('fechaInicioHasta',  sql.Date,         fechaInicioHasta  || null)
+      .input('fechaFinDesde',     sql.Date,         fechaFinDesde     || null)
+      .input('fechaFinHasta',     sql.Date,         fechaFinHasta     || null)
+      .execute('[db_accessadmin].[spMostrarPermisosRRHHPaginado]');
+
+    const totalCount = result.recordset[0]?.TotalCount ?? 0;
+    res.json({
+      data: result.recordset,
+      totalCount,
+      currentPage: parseInt(page),
+      pageSize:    parseInt(pageSize),
+      totalPages:  Math.ceil(totalCount / parseInt(pageSize)),
+    });
+  } catch (error) {
+    console.error('Error obteniendo permisos paginados:', error);
+    res.status(500).json({ error: 'Error obteniendo permisos paginados' });
+  }
+});
+
 // Nueva ruta para obtener permisos aprobados y procesados
 router.get('/permisos/aprobadosProcesados', async (req, res) => {
   console.log('Request GET received for /permisos/aprobadosProcesados');
