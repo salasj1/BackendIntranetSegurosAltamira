@@ -17,14 +17,21 @@ export function notificarDocumentosVencidos() {
       const result = await pool.request().execute('spEmpleadosDocumentosPendientes');
       // Leer la plantilla HTML una sola vez fuera del ciclo
       const attachments = [
-      {
-        filename: 'logo.png',
-        path: path.join(publicImagesPath, 'logo.png'),
-        cid: 'logoEmpresa',
-        filename:'no_archivos_expediente.png',
-        path:  path.join(publicImagesPath, 'no_archivos_expediente.png'),
-        cid:'no_archivos_expediente'
-      }];
+        {
+          filename: 'logo.png',
+          path: path.join(publicImagesPath, 'logo.png'),
+          cid: 'logoEmpresa',
+          contentType: 'image/png',
+          contentDisposition: 'inline'
+        },
+        {
+          filename: 'no_archivos_expediente.png',
+          path: path.join(publicImagesPath, 'no_archivos_expediente.png'),
+          cid: 'no_archivos_expediente',
+          contentType: 'image/png',
+          contentDisposition: 'inline'
+        }
+      ];
       const plantillaPath = path.join(__dirname, '../templates/plantillaCorreoDocumentos.html');
       const plantillaHtml = fs.readFileSync(plantillaPath, 'utf8');
       console.log('Subiendo correos de documentos vencidos...');
@@ -45,7 +52,7 @@ export function notificarDocumentosVencidos() {
           .replace(/{{nombre_completo}}/g, emp.nombre_completo)
           .replace('{{detalles}}', detalles)
           .replace('{{anio}}', new Date().getFullYear())
-          .replace('${BASE_URL}', process.env.BASE_URL);
+          .replace('${baseURL}', process.env.BASE_URL);
         const mailOptions = {
           from: 'Intranet Seguros Altamira <intranet@segurosaltamira.com.ve>',
           to: emp.correo_e,

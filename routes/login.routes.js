@@ -32,7 +32,7 @@ router.post('/login', async (req, res) => {
         const result = await pool.request()
             .input('username', sql.NVarChar, username)
             .query(`
-                SELECT u.*, e.nombre_completo nombre_completo,e.nombres nombres,e.apellidos apellidos, e.des_cargo, e.fecha_ing, e.des_depart, e.tipo, e.RRHH, e.correo_e email, e.sexo sexo
+                SELECT u.*, e.nombre_completo nombre_completo,e.nombres nombres,e.apellidos apellidos, e.des_cargo, e.fecha_ing, e.fecha_nac, e.des_depart, e.tipo, e.RRHH, e.correo_e email, e.sexo sexo
                 FROM snusuarios u
                 JOIN VSNEMPLE e ON u.cod_emp COLLATE Modern_Spanish_CI_AS = e.cod_emp COLLATE Modern_Spanish_CI_AS
                 WHERE u.username = @username COLLATE Modern_Spanish_CI_AS;
@@ -56,6 +56,7 @@ router.post('/login', async (req, res) => {
                     nombre_completo: user.nombre_completo,
                     des_cargo: user.des_cargo,
                     fecha_ing: user.fecha_ing,
+                    fecha_nac: user.fecha_nac,
                     des_depart: user.des_depart,
                     tipo: user.tipo,
                     RRHH: user.RRHH,

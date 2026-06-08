@@ -8,7 +8,7 @@ router.get('/TotalVacacionesYPermisos', async (req, res) => {
     try {
         const pool = await getConnection();
         const result = await pool.request()
-        .execute('spTotalCantidadSolicitudesVacacionesYPermisosProcesados');
+        .execute('spTotalCantidadSolicitudesVacacionesYPermisos');
         const totalVacaciones = result.recordsets[0][0].total_vacaciones;
         const totalPermisos = result.recordsets[1][0].total_permisos;
         console.log('Estadísticas obtenidas:', { totalVacaciones, totalPermisos });

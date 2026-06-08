@@ -86,15 +86,8 @@ function buildEmailHtml(primerNombre, primerApellido) {
 // Lógica principal de envío
 // ─────────────────────────────────────────────
 
-export async function ejecutarEnvioCumpleanos() {
-
-  let pool;
-  try {
-    pool = await getConnection();
-  } catch (err) {
-    console.error('[enviarCumpleanos] Error de conexión a BD:', err.message);
-    return;
-  }
+export const ejecutarEnvioCumpleanos = async () => {
+  const pool = await getConnection();
 
   let cumpleaneros;
   try {
@@ -111,50 +104,31 @@ export async function ejecutarEnvioCumpleanos() {
 
   console.log(`[enviarCumpleanos] Cumpleañeros hoy: ${cumpleaneros.length}`);
 
-  const destino = 'masivo@segurosaltamira.com';
-
-
-
+  const destino = process.env.CORREO_CUMPLEANOS_DESTINO || 'masivo@segurosaltamira.com';
   let enviados = 0;
   let fallidos = 0;
 
-  // El browser se lanza UNA SOLA VEZ para todos los empleados del día
   let browser;
   try {
     browser = await puppeteer.launch({
       headless: true,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--allow-file-access-from-files', // Permite que páginas file:// carguen la imagen de fondo
-      ],
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--allow-file-access-from-files'],
     });
 
     for (const emp of cumpleaneros) {
       const primerNombre = titleCase((emp.primer_nombre || '').trim());
       const primerApellido = titleCase((emp.primer_apellido || '').trim());
-
-      // Para empleados de Caracas (co_ubicacion = '103') el des_depart indica la VP/Gerencia.
-      // Para sucursales el des_depart dice "SUCURSAL XXXX".
       const cargo = titleCase((emp.des_cargo || '').trim());
       const departamento = titleCase((emp.des_depart || '').trim());
-      const fechaSolo = emp.fecha_nac.toISOString().split('T')[0]; // "YYYY-MM-DD"
+      const fechaSolo = emp.fecha_nac.toISOString().split('T')[0];
       const [, mesRaw, diaRaw] = fechaSolo.split('-');
       const dia = String(parseInt(diaRaw, 10));
       const mes = mesRaw.padStart(2, '0');
-      console.log(dia, mes);
       const fechaDia = `${dia}/${mes}`;
 
-      // Generar tarjeta PNG en memoria (no se escribe en disco)
       let pngBuffer;
       try {
-        pngBuffer = await generarTarjetaCumpleanos(browser, {
-          primerNombre,
-          primerApellido,
-          cargo,
-          departamento,
-          fechaDia,
-        });
+        pngBuffer = await generarTarjetaCumpleanos(browser, { primerNombre, primerApellido, cargo, departamento, fechaDia });
       } catch (err) {
         console.error(`[enviarCumpleanos] [IMG-FAIL] ${primerNombre} ${primerApellido}:`, err.message);
         fallidos++;
@@ -166,35 +140,30 @@ export async function ejecutarEnvioCumpleanos() {
         to: destino,
         subject: `¡Celebremos las ocasiones especiales!`,
         html: buildEmailHtml(primerNombre, primerApellido),
-        attachments: [
-          {
-            filename: `tarjeta-cumpleanos-${primerNombre}-${primerApellido}.png`,
-            content: pngBuffer,
-            cid: 'tarjetaCumpleanos',
-            contentType: 'image/png',
-            contentDisposition: 'inline',
-          },
-        ],
+        attachments: [{
+          filename: `tarjeta-cumpleanos-${primerNombre}-${primerApellido}.png`,
+          content: pngBuffer,
+          cid: 'tarjetaCumpleanos',
+          contentType: 'image/png',
+          contentDisposition: 'inline',
+        }],
       };
 
       const resultado = await sendMailWithRetry(mailOptions);
-
       if (resultado.success) {
-        console.log(`[enviarCumpleanos] [OK]   ${primerNombre} ${primerApellido} (${emp.correo_e})`);
+        console.log(`[enviarCumpleanos] [OK]   ${primerNombre} ${primerApellido}`);
         enviados++;
       } else {
         console.error(`[enviarCumpleanos] [FAIL] ${primerNombre} ${primerApellido}:`, resultado.error?.message);
         fallidos++;
       }
     }
-
   } finally {
-    // Cerrar el browser siempre, incluso si hubo errores
     if (browser) await browser.close();
   }
 
   console.log(`[enviarCumpleanos] Resumen: ${enviados} enviados, ${fallidos} fallidos de ${cumpleaneros.length} total.`);
-}
+};
 
 // ─────────────────────────────────────────────
 // Exportable: registrar el cron al iniciar el servidor

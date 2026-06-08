@@ -1,5 +1,7 @@
 .env
+.agents
 node_modules
+skills-lock.json
 JSON/GoogleDriveKey.json
 JSON/GoogleServiceKey.json
 token.json
@@ -8,3 +10,4 @@ CLAUDE.md
 .claude/agent-memory/senior-backend-nodejs/project_email_jobs.md
 .claude/agents/senior-backend-nodejs.md
 database/sp_cumpleanos.sql
+.claude

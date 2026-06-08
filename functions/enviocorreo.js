@@ -54,8 +54,8 @@ async function enviarCorreo(cod_emp, fechaInicio, fechaFin, fechaRetorno, tipo, 
         attachments.push({
           filename: 'solicitar_vacaciones.png',
           path: path.join(publicImagesPath, 'solicitar_vacaciones.png'),
-          cid: 'SolicitudVacaciones',
-          contentType: 'image/png' ,
+          cid: 'SolicitarVacaciones',
+          contentType: 'image/png',
           contentDisposition: 'inline'
         });
         } else {
@@ -81,7 +81,9 @@ async function enviarCorreo(cod_emp, fechaInicio, fechaFin, fechaRetorno, tipo, 
       
       // Leer el archivo de plantilla
       let htmlContent = fs.readFileSync(templatePath, 'utf8');
-      htmlContent = htmlContent.replace('${cuerpo}', cuerpo);
+      htmlContent = htmlContent
+        .replace('${cuerpo}', cuerpo)
+        .replace('${baseURL}', process.env.BASE_URL || '');
 
       const mailOptions = {
         from: '"Intranet Seguros Altamira" <IntranetSegurosAltamira@segurosaltamira.com>',
