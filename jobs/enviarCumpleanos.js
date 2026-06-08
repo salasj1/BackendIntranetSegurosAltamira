@@ -52,13 +52,17 @@ const enviarCorreoCumpleanos = async (nombre, correo) => {
 };
 
 
+export const ejecutarEnvioCumpleanos = async () => {
+  const cumpleaneros = await getCumpleanerosHoy();
+  for (const persona of cumpleaneros) {
+    await enviarCorreoCumpleanos(persona.nombre, persona.correo);
+  }
+  console.log(`Correos de cumpleaños enviados: ${cumpleaneros.length}`);
+};
+
 cron.schedule('15 8 * * *', async () => {
   try {
-    const cumpleaneros = await getCumpleanerosHoy();
-    for (const persona of cumpleaneros) {
-      await enviarCorreoCumpleanos(persona.nombre, persona.correo);
-    }
-    console.log(`Correos de cumpleaños enviados: ${cumpleaneros.length}`);
+    await ejecutarEnvioCumpleanos();
   } catch (error) {
     console.error('Error enviando correos de cumpleaños:', error);
   }

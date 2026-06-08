@@ -2,7 +2,7 @@ import express from 'express';
 import app from './app.js';
 import { getConnection } from './database/connection.js';
 import dotenv from 'dotenv';
-/* import './jobs/enviarCumpleanos.js';  */
+import './jobs/enviarCumpleanos.js'; 
 import { sincronizarDocumentosBD } from './jobs/sincronizarDocumentosBD.js';
 import { notificarDocumentosVencidos } from './jobs/notificarDocumentosVencidos.js';
 
@@ -17,9 +17,9 @@ app.listen(3001, () => {
   console.log('Server is running ');
 });
 // Inicia la importación automática diaria
-//sincronizarDocumentosBD();
-//notificarDocumentosVencidos();
-//enviarCumpleanos();
+sincronizarDocumentosBD();
+notificarDocumentosVencidos();
+enviarCumpleanos();
 
 app.get("/", (req, res) => {
   res.json({ message: "Hola desde el servidor!" });
