@@ -176,7 +176,7 @@ export function enviarCumpleanos() {
 
   // Minuto 20, hora 7, cualquier día, mes y día de semana (Lunes a Viernes)
   // 7:20 AM para no colisionar con otros jobs que se disparan a las 8:00 AM exactas.
-  cron.schedule('27 9 * * 1-5', ejecutarEnvioCumpleanos, {
+  cron.schedule('20 7 * * 1-5', ejecutarEnvioCumpleanos, {
     timezone: 'America/Caracas',
   });
 }
