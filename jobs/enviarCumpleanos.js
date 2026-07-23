@@ -6,9 +6,7 @@
  * que cumple años hoy, genera una tarjeta PNG con Puppeteer (en memoria,
  * sin escribir en disco) y la envía por correo a la dirección de distribución.
  *
- * Variables de entorno:
- *   CORREO_CUMPLEANOS_DESTINO — dirección destino (default: masivo@segurosaltamira.com)
- *
+
  * Imágenes requeridas en public/images/:
  *   - Imagen-cumpleanos.jpg → fondo de la tarjeta (leído por generarTarjetaCumpleanos)
  */
@@ -104,7 +102,7 @@ export const ejecutarEnvioCumpleanos = async () => {
 
   console.log(`[enviarCumpleanos] Cumpleañeros hoy: ${cumpleaneros.length}`);
 
-  const destino = process.env.CORREO_CUMPLEANOS_DESTINO || 'masivo@segurosaltamira.com';
+  const destino =  'masivo@segurosaltamira.com' ;
   let enviados = 0;
   let fallidos = 0;
 
@@ -178,7 +176,7 @@ export function enviarCumpleanos() {
 
   // Minuto 20, hora 7, cualquier día, mes y día de semana (Lunes a Viernes)
   // 7:20 AM para no colisionar con otros jobs que se disparan a las 8:00 AM exactas.
-  cron.schedule('20 7 * * 1-5', ejecutarEnvioCumpleanos, {
+  cron.schedule('27 9 * * 1-5', ejecutarEnvioCumpleanos, {
     timezone: 'America/Caracas',
   });
 }
